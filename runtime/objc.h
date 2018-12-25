@@ -35,24 +35,40 @@
 
 #if !OBJC_TYPES_DEFINED
 /// An opaque type that represents an Objective-C class.
+// Note add by xiaohai
+// 类结构体定义
 typedef struct objc_class *Class;
+
+// Note add by xiaohai
+// 对象结构体定义
+/// A pointer to an instance of a class.
+//这个结构体只有一个isa变量，指向实例对象所属的类
+//对象最重要的特点是可以给其发送消息
+
+typedef struct objc_object *id;
 
 /// Represents an instance of a class.
 struct objc_object {
     Class _Nonnull isa  OBJC_ISA_AVAILABILITY;
 };
-
-/// A pointer to an instance of a class.
-typedef struct objc_object *id;
 #endif
 
 /// An opaque type that represents a method selector.
+// Note add by xiaohai SEL 定义 (有点像方法签名)
+// 虽然 SEL 是 objc_selector 结构体指针，但实际上它只是一个C字符串。在类加载的时候，
+// 编译器会生成与方法相对应的选择子，并注册到 Objective-C 的 Runtime 运行系统。
+// SEL selA = @selector(setString:);
+// 不同类中相同名字的方法所对应的方法选择子是相同的，即使方法名字相同而变量类型不同也会导致它们具有相同的方法选择子。
 typedef struct objc_selector *SEL;
 
 /// A pointer to the function of a method implementation. 
 #if !OBJC_OLD_DISPATCH_PROTOTYPES
 typedef void (*IMP)(void /* id, SEL, ... */ ); 
 #else
+// Note add by xiaohai IMP 定义
+// 代表函数指针，即函数执行的入口。该函数使用标准的C调用。
+// 第一个参数指向 self（它代表当前类实例的地址，如果是类则指向的是它的元类），作为消息的接受者；
+// 第二个参数代表方法的选择子；... 代表可选参数，前面的 id 代表返回值。
 typedef id _Nullable (*IMP)(id _Nonnull, SEL _Nonnull, ...); 
 #endif
 

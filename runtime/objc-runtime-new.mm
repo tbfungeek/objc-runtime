@@ -4834,7 +4834,9 @@ log_and_fill_cache(Class cls, IMP imp, SEL sel, id receiver, Class implementer)
 
 /***********************************************************************
 * _class_lookupMethodAndLoadCache.
+* * Note add by xiaohai 专门为调度器使用的方法查找，其他使用lookUpImp
 * Method lookup for dispatchers ONLY. OTHER CODE SHOULD USE lookUpImp().
+* 这个查找避免在缓存中查找，因为调度器已经尝试过这个步骤了
 * This lookup avoids optimistic cache scan because the dispatcher 
 * already tried that.
 **********************************************************************/
@@ -4847,14 +4849,18 @@ IMP _class_lookupMethodAndLoadCache3(id obj, SEL sel, Class cls)
 
 /***********************************************************************
 * lookUpImpOrForward.
+* Note add by xiaohai
+* 标准的IMP查找
 * The standard IMP lookup. 
 * initialize==NO tries to avoid +initialize (but sometimes fails)
 * cache==NO skips optimistic unlocked lookup (but uses cache elsewhere)
 * Most callers should use initialize==YES and cache==YES.
+* inst是class的一个实例或者子类实例
 * inst is an instance of cls or a subclass thereof, or nil if none is known. 
 *   If cls is an un-initialized metaclass then a non-nil inst is faster.
 * May return _objc_msgForward_impcache. IMPs destined for external use 
 *   must be converted to _objc_msgForward or _objc_msgForward_stret.
+* 如果你不想前向查找使用lookUpImpOrNil
 *   If you don't want forwarding at all, use lookUpImpOrNil() instead.
 **********************************************************************/
 IMP lookUpImpOrForward(Class cls, SEL sel, id inst, 
@@ -4867,12 +4873,14 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
 
     // Optimistic cache lookup
     if (cache) {
+        //从缓存中获取IMP,如果在缓存中则直接返回
         imp = cache_getImp(cls, sel);
         if (imp) return imp;
     }
 
     // runtimeLock is held during isRealized and isInitialized checking
     // to prevent races against concurrent realization.
+    // runtimeLock 在isRealized和isInitialized 检查的时候被持有
 
     // runtimeLock is held during method search to make
     // method-lookup + cache-fill atomic with respect to method addition.

@@ -34,50 +34,135 @@
 #if TARGET_OS_MAC
 #include <sys/types.h>
 #endif
-
-
-/* Types */
-
+////===================================================BEGIN 基本结构体定义 BEGIN======================================================///
 #if !OBJC_TYPES_DEFINED
-
-/// An opaque type that represents a method in a class definition.
-typedef struct objc_method *Method;
-
-/// An opaque type that represents an instance variable.
-typedef struct objc_ivar *Ivar;
-
-/// An opaque type that represents a category.
-typedef struct objc_category *Category;
-
-/// An opaque type that represents an Objective-C declared property.
-typedef struct objc_property *objc_property_t;
-
+// Note add by xiaohai 基本概念
+// 1. 类结构体
+// 属性、协议和方法都存储在类的可写段中，这些信息可以在运行时被改变，这也是分类的实现原理，但是类的成员变量存储在只读段中，不能被修改，这也是分类不能添加成员变量的原因
+// 当我们向一个类的实体对象发送消息时，实体对象会根据其内部的isa指针，寻找其对应的类，找到对应的类之后，会先在类的方法缓存中寻找对应的方法，找到执行，
+// 没找到上其自身内部的方法链表去寻找，还没找到，根据其内部的父类上父类去寻找
 struct objc_class {
-    Class _Nonnull isa  OBJC_ISA_AVAILABILITY;
-
+    Class _Nonnull isa  OBJC_ISA_AVAILABILITY;              /*
+                                                             对象里面有一个isa指针，这个指针指向了它所属的类，而在类里面也有一个isa指针，这个指针指向元类，元类是一个包含这个类的类方法的结构体，
+                                                             它存储了[这个类的所有类方法]，所以当我们调用类方法的时候其实就是在类本身的isa指针指向的元类里面寻找。
+                                                             在元类里面也有一个isa指针，这个指针指向根类的元类，而根类的元类的isa指针指向根类自己。
+                                                             当向对象发消息，runtime会在这个对象所属类方法列表中查找发送消息对应的方法，
+                                                             但当向类发送消息时，runtime就会在这个类的meta class方法列表里查找
+                                                             */
 #if !__OBJC2__
-    Class _Nullable super_class                              OBJC2_UNAVAILABLE;
-    const char * _Nonnull name                               OBJC2_UNAVAILABLE;
-    long version                                             OBJC2_UNAVAILABLE;
-    long info                                                OBJC2_UNAVAILABLE;
-    long instance_size                                       OBJC2_UNAVAILABLE;
-    struct objc_ivar_list * _Nullable ivars                  OBJC2_UNAVAILABLE;
-    struct objc_method_list * _Nullable * _Nullable methodLists                    OBJC2_UNAVAILABLE;
-    struct objc_cache * _Nonnull cache                       OBJC2_UNAVAILABLE;
-    struct objc_protocol_list * _Nullable protocols          OBJC2_UNAVAILABLE;
+    /*[3]*/
+    Class _Nullable super_class                              OBJC2_UNAVAILABLE;/*父类类型信息*/
+    const char * _Nonnull name                               OBJC2_UNAVAILABLE;/*类名*/
+    long version                                             OBJC2_UNAVAILABLE;/*类的版本信息，默认为0*/
+    long info                                                OBJC2_UNAVAILABLE;/*类信息，供运行期使用的一些位标识*/
+    long instance_size                                       OBJC2_UNAVAILABLE;/*类的实例变量的大小*/
+    struct objc_ivar_list * _Nullable ivars                  OBJC2_UNAVAILABLE;/*类的成员变量链表*/
+    /*[2]*/
+    struct objc_method_list * _Nullable * _Nullable methodLists OBJC2_UNAVAILABLE;/*类的方法链表*/
+    struct objc_protocol_list * _Nullable protocols          OBJC2_UNAVAILABLE; /*类的协议链表 协议链表用来存储声明遵守的正式协议*/
+    /*[1]*/
+    struct objc_cache * _Nonnull cache                       OBJC2_UNAVAILABLE; /*方法缓存*/
+    /*
+     在实际使用中，这个对象只有一部分方法是常用的，很多方法其实很少用或者根本用不上。
+     这种情况下，如果每次消息来时，我们都是methodLists中遍历一遍，性能势必很差。这时，cache就派上用场了。
+     在我们每次调用过一个方法后，这个方法就会被缓存到cache列表中，下次调用的时候runtime就会优先去cache中查找，
+     如果cache没有，才去methodLists中查找方法。这样，对于那些经常用到的方法的调用，但提高了调用的效率。
+     */
 #endif
 
 } OBJC2_UNAVAILABLE;
-/* Use `Class` instead of `struct objc_class *` */
+
+// Note add by xiaohai
+// 2. 属性
+// 我们每定义一个@property都会添加对应的ivar, getter和setter到类结构体objc_class中。具体来说，系统会在objc_ivar_list中添加一个成员变量的描述，然后在methodLists中分别添加setter和getter方法的描述。
+// 这也是为什么类结构体中没有属性结构体的原因， property 信息分开存储到了 objc_ivar_list 和 objc_method_list中
+typedef struct objc_property *objc_property_t;
+
+// Note add by xiaohai
+// 3. 实例变量
+typedef struct objc_ivar *Ivar;
+
+// Note add by xiaohai
+// 4. 实例方法
+typedef struct objc_method *Method;
+
+// Note add by xiaohai
+// 5. 分类
+typedef struct objc_category *Category;
 
 #endif
 
+//Note add by xiaohai
+//实例变量定义
+struct objc_ivar {
+    char * _Nullable ivar_name                               OBJC2_UNAVAILABLE;
+    char * _Nullable ivar_type                               OBJC2_UNAVAILABLE;
+    int ivar_offset /*基地址偏移字节*/                          OBJC2_UNAVAILABLE;
+#ifdef __LP64__
+    int space                                                OBJC2_UNAVAILABLE;
+#endif
+}
+OBJC2_UNAVAILABLE;
+//Note add by xiaohai
+//实例变量列表
+struct objc_ivar_list {
+    int ivar_count                                           OBJC2_UNAVAILABLE;
+#ifdef __LP64__
+    int space                                                OBJC2_UNAVAILABLE;
+#endif
+    /* variable length structure */
+    struct objc_ivar ivar_list[1]                            OBJC2_UNAVAILABLE;
+}                                                            OBJC2_UNAVAILABLE;
+
+//Note add by xiaohai
+//方法定义 Method = SEL + IMP + method_types 在Mac OS X中SEL其实被映射为一个C字符串，可以看作是方法的名字，它并不一个指向具体方法实现
+//Note add by xiaohai Method && SEL && IMP 区别：
+//一个类（Class）持有一个分发表，在运行期分发消息，表中的每一个实体代表一个方法（Method），它的名字叫做选择子（SEL），对应着一种方法实现（IMP）。
+struct objc_method {
+    SEL _Nonnull method_name                                 OBJC2_UNAVAILABLE;//前面提到过相同名字的方法即使在不同类中定义，它们的方法选择器也相同。
+    char * _Nullable method_types                            OBJC2_UNAVAILABLE;//存储着方法的参数类型和返回值类型
+    IMP _Nonnull method_imp                                  OBJC2_UNAVAILABLE;//指向方法的实现，本质上是一个函数的指针
+}                                                            OBJC2_UNAVAILABLE;
+
+struct objc_method_list {
+    struct objc_method_list * _Nullable obsolete             OBJC2_UNAVAILABLE;
+    int method_count                                         OBJC2_UNAVAILABLE;
+#ifdef __LP64__
+    int space                                                OBJC2_UNAVAILABLE;
+#endif
+    /* variable length structure */
+    struct objc_method method_list[1]                        OBJC2_UNAVAILABLE;
+}                                                            OBJC2_UNAVAILABLE;
+
+//Note add by xiaohai
+//协议及协议列表定义
 #ifdef __OBJC__
 @class Protocol;
 #else
 typedef struct objc_object Protocol;
 #endif
 
+struct objc_protocol_list {
+    struct objc_protocol_list * _Nullable next;
+    long count;
+    __unsafe_unretained Protocol * _Nullable list[1];
+};
+
+// Note add by xiaohai
+// 6. 缓存定义
+struct objc_cache {
+    unsigned int mask /* total = mask + 1 */                 OBJC2_UNAVAILABLE;
+    unsigned int occupied                                    OBJC2_UNAVAILABLE;
+    Method _Nullable buckets[1]                              OBJC2_UNAVAILABLE;
+};
+
+//mask：一个整数，指定分配的缓存bucket的总数。在方法查找过程中，Objective-C runtime使用这个字段来确定开始线性查找数组的索引位置。
+//指向方法selector的指针与该字段做一个AND位操作(index = (mask & selector))。这可以作为一个简单的hash散列算法。
+//occupied：一个整数，指定实际占用的缓存bucket的总数。
+//buckets：指向Method数据结构指针的数组。这个数组可能包含不超过mask+1个元素。需要注意的是，指针可能是NULL，
+//表示这个缓存bucket没有被占用，另外被占用的bucket可能是不连续的。这个数组可能会随着时间而增长。
+
+// 方法描述
 /// Defines a method
 struct objc_method_description {
     SEL _Nullable name;               /**< The name of the method */
@@ -90,7 +175,7 @@ typedef struct {
     const char * _Nonnull value;          /**< The value of the attribute (usually empty) */
 } objc_property_attribute_t;
 
-
+////===================================================END 基本结构体定义 END======================================================///
 /* Functions */
 
 /* Working with Instances */
@@ -1810,57 +1895,12 @@ struct objc_method_description_list {
     struct objc_method_description list[1];
 };
 
-
-struct objc_protocol_list {
-    struct objc_protocol_list * _Nullable next;
-    long count;
-    __unsafe_unretained Protocol * _Nullable list[1];
-};
-
-
 struct objc_category {
     char * _Nonnull category_name                            OBJC2_UNAVAILABLE;
     char * _Nonnull class_name                               OBJC2_UNAVAILABLE;
     struct objc_method_list * _Nullable instance_methods     OBJC2_UNAVAILABLE;
     struct objc_method_list * _Nullable class_methods        OBJC2_UNAVAILABLE;
     struct objc_protocol_list * _Nullable protocols          OBJC2_UNAVAILABLE;
-}                                                            OBJC2_UNAVAILABLE;
-
-
-struct objc_ivar {
-    char * _Nullable ivar_name                               OBJC2_UNAVAILABLE;
-    char * _Nullable ivar_type                               OBJC2_UNAVAILABLE;
-    int ivar_offset                                          OBJC2_UNAVAILABLE;
-#ifdef __LP64__
-    int space                                                OBJC2_UNAVAILABLE;
-#endif
-}                                                            OBJC2_UNAVAILABLE;
-
-struct objc_ivar_list {
-    int ivar_count                                           OBJC2_UNAVAILABLE;
-#ifdef __LP64__
-    int space                                                OBJC2_UNAVAILABLE;
-#endif
-    /* variable length structure */
-    struct objc_ivar ivar_list[1]                            OBJC2_UNAVAILABLE;
-}                                                            OBJC2_UNAVAILABLE;
-
-
-struct objc_method {
-    SEL _Nonnull method_name                                 OBJC2_UNAVAILABLE;
-    char * _Nullable method_types                            OBJC2_UNAVAILABLE;
-    IMP _Nonnull method_imp                                  OBJC2_UNAVAILABLE;
-}                                                            OBJC2_UNAVAILABLE;
-
-struct objc_method_list {
-    struct objc_method_list * _Nullable obsolete             OBJC2_UNAVAILABLE;
-
-    int method_count                                         OBJC2_UNAVAILABLE;
-#ifdef __LP64__
-    int space                                                OBJC2_UNAVAILABLE;
-#endif
-    /* variable length structure */
-    struct objc_method method_list[1]                        OBJC2_UNAVAILABLE;
 }                                                            OBJC2_UNAVAILABLE;
 
 
@@ -1885,12 +1925,6 @@ typedef struct objc_cache *Cache                             OBJC2_UNAVAILABLE;
 #else
 #define CACHE_HASH(sel, mask) (((unsigned int)((uintptr_t)(sel)>>3)) & (mask))
 #endif
-struct objc_cache {
-    unsigned int mask /* total = mask + 1 */                 OBJC2_UNAVAILABLE;
-    unsigned int occupied                                    OBJC2_UNAVAILABLE;
-    Method _Nullable buckets[1]                              OBJC2_UNAVAILABLE;
-};
-
 
 typedef struct objc_module *Module                           OBJC2_UNAVAILABLE;
 

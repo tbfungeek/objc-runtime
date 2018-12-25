@@ -233,7 +233,7 @@ LExit$0:
 //
 // CacheLookup	NORMAL|STRET
 // CacheLookup2	NORMAL|STRET
-//
+// Note add by xiaohai 类方法缓存中定位一个selector
 // Locate the implementation for a selector in a class's method cache.
 //
 // Takes: 

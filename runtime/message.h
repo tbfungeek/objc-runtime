@@ -66,16 +66,30 @@ objc_msgSendSuper(void /* struct objc_super *super, SEL op, ... */ )
     OBJC_AVAILABLE(10.0, 2.0, 9.0, 1.0, 2.0);
 #else
 
-/** 
+/**
+ * Note added by xiaohai
+ * 向一个类的实例发送一个消息
  * Sends a message with a simple return value to an instance of a class.
- * 
+ *
+ * 接收这个消息的实例
  * @param self A pointer to the instance of the class that is to receive the message.
+ *
+ * 处理这个消息的方法选择器
  * @param op The selector of the method that handles the message.
- * @param ... 
+ *
+ * 发给方法的可变参数列表
+ * @param ...
  *   A variable argument list containing the arguments to the method.
- * 
+ *
+ * 方法的返回值
  * @return The return value of the method.
- * 
+ *
+ * 当遇到一个方法调用的时候，编译器会产生一个对objc_msgSend objc_msgSend_stret objc_msgSendSuper objc_msgSendSuper_stret的函数调用，
+ * 如果调用的是[super xxxx] 那么将会调用objc_msgSendSuper objc_msgSendSuper_stret 也就是有带super的函数
+ * 如果调用的是[obj xxxxx] 那么将会调用objc_msgSend objc_msgSend_stret
+ * 如果返回的值是带有结构的将会调用 objc_msgSendSuper_stret objc_msgSend_stret 也就是带有stret的
+ *
+ * Todo by xiaohai 带super。stret和不带的有啥区别 
  * @note When it encounters a method call, the compiler generates a call to one of the
  *  functions \c objc_msgSend, \c objc_msgSend_stret, \c objc_msgSendSuper, or \c objc_msgSendSuper_stret.
  *  Messages sent to an object’s superclass (using the \c super keyword) are sent using \c objc_msgSendSuper; 

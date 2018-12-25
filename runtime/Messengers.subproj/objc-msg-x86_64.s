@@ -236,7 +236,7 @@ LExit$0:
 /////////////////////////////////////////////////////////////////////
 //
 // CacheLookup	return-type, caller
-//
+// Note add by xiaohai 在某个selector的方法缓存中定位某个类的实现
 // Locate the implementation for a class in a selector's method cache.
 //
 // Takes: 
@@ -256,10 +256,9 @@ LExit$0:
 
 	// CacheHit must always be preceded by a not-taken `jne` instruction
 	// in order to set the correct flags for _objc_msgForward_impcache.
-
 	// r11 = found bucket
 	
-.if $1 == GETIMP
+.if $1 == GETIMP  //如何指令是GETIMP那么直接返回imp
 	movq	cached_imp(%r11), %rax	// return imp
 	ret
 
@@ -272,10 +271,10 @@ LExit$0:
 .endif
 
 .if $1 == CALL
-	jmp	*cached_imp(%r11)	// call imp
+	jmp	*cached_imp(%r11)	// call imp 调用imp
 	
 .elseif $1 == LOOKUP
-	movq	cached_imp(%r11), %r11	// return imp
+	movq	cached_imp(%r11), %r11	// return imp 返回imp
 	ret
 	
 .else
@@ -286,23 +285,25 @@ LExit$0:
 
 .endmacro
 
-
+//Note by xiaohai 这个不是很清楚，在哪里查找？？
 .macro	CacheLookup
 .if $0 != STRET
 	movq	%a2, %r11		// r11 = _cmd
 .else
 	movq	%a3, %r11		// r11 = _cmd
 .endif
+	//将r11 = _cmd
 	andl	24(%r10), %r11d		// r11 = _cmd & class->cache.mask
 	shlq	$$4, %r11		// r11 = offset = (_cmd & mask)<<4
 	addq	16(%r10), %r11		// r11 = class->cache.buckets + offset
 
 .if $0 != STRET
+        //当前的bucket->sel 不是 _cmd
 	cmpq	cached_sel(%r11), %a2	// if (bucket->sel != _cmd)
 .else
 	cmpq	cached_sel(%r11), %a3	// if (bucket->sel != _cmd)
 .endif
-	jne 	1f			//     scan more
+	jne 	1f			//while 1             //     scan more
 	// CacheHit must always be preceded by a not-taken `jne` instruction
 	CacheHit $0, $1			// call or return imp
 
@@ -310,7 +311,6 @@ LExit$0:
 	// loop
 	cmpq	$$1, cached_sel(%r11)
 	jbe	3f			// if (bucket->sel <= 1) wrap or miss
-
 	addq	$$16, %r11		// bucket++
 2:	
 .if $0 != STRET
@@ -367,6 +367,7 @@ LExit$0:
 //
 /////////////////////////////////////////////////////////////////////
 
+//Note add by xiaohai
 .macro MethodTableLookup
 
 	push	%rbp
@@ -400,6 +401,7 @@ LExit$0:
 	movq	%a3, %a2
 .endif
 	movq	%r10, %a3
+        // 调用__class_lookupMethodAndLoadCache3
 	call	__class_lookupMethodAndLoadCache3
 
 	// IMP is now in %rax
@@ -461,6 +463,7 @@ LExit$0:
 	movq	$$ ISA_MASK, %r10
 	andq	(%a2), %r10
 .endif
+
 LGetIsaDone:	
 .endmacro
 
@@ -658,18 +661,21 @@ _objc_debug_taggedpointer_classes:
 _objc_debug_taggedpointer_ext_classes:
 	.fill 256, 8, 0
 
+    	//Note by xiaohai _objc_msgSend 入口
 	ENTRY _objc_msgSend
 	UNWIND _objc_msgSend, NoFrame
-
+	//判空
 	NilTest	NORMAL
-
+	//快速获取isa
 	GetIsaFast NORMAL		// r10 = self->isa
+        //在缓存中查找IMP 如果查找成功直接调用 IMP
 	CacheLookup NORMAL, CALL	// calls IMP on success
-
+	//????
 	NilTestReturnZero NORMAL
-
+    	//????
 	GetIsaSupport NORMAL
 
+//查找缓存失败，在方法列表中查找
 // cache miss: go search the method lists
 LCacheMiss:
 	// isa still in r10
@@ -1063,14 +1069,17 @@ LCacheMiss:
  *
  ********************************************************************/
 
+	//Note add by xiaohai
 	STATIC_ENTRY __objc_msgSend_uncached
 	UNWIND __objc_msgSend_uncached, FrameWithNoSaves
 	
 	// THIS IS NOT A CALLABLE C FUNCTION
 	// Out-of-band r10 is the searched class
 
+	// 在方法表中查找对应的IMP
 	// r10 is already the class to search
 	MethodTableLookup NORMAL	// r11 = IMP
+	// 跳到对应的IMP去执行
 	jmp	*%r11			// goto *imp
 
 	END_ENTRY __objc_msgSend_uncached
@@ -1125,7 +1134,7 @@ LCacheMiss:
 *   method caches.
 *
 ********************************************************************/
-
+        //Note add by xiaohai
 	STATIC_ENTRY __objc_msgForward_impcache
 	// Method cache version
 
@@ -1137,7 +1146,7 @@ LCacheMiss:
 
 	END_ENTRY __objc_msgForward_impcache
 	
-	
+	//Note add by xiaohai
 	ENTRY __objc_msgForward
 	// Non-stret version
 

@@ -565,6 +565,7 @@ void fixupCopiedIvars(id newObject, id oldObject)
 
 
 /***********************************************************************
+* Note add by xiaohai
 * _class_resolveClassMethod
 * Call +resolveClassMethod, looking for a method to be added to class cls.
 * cls should be a metaclass.
@@ -610,6 +611,7 @@ static void _class_resolveClassMethod(Class cls, SEL sel, id inst)
 
 
 /***********************************************************************
+* Note add by xiaohai
 * _class_resolveInstanceMethod
 * Call +resolveInstanceMethod, looking for a method to be added to class cls.
 * cls may be a metaclass or a non-meta class.
@@ -652,13 +654,16 @@ static void _class_resolveInstanceMethod(Class cls, SEL sel, id inst)
 
 
 /***********************************************************************
+* Note add by xiaohai 在本身及父类的缓存和方法列表中没有找到调用resolveClassMethod，resolveInstanceMethod
 * _class_resolveMethod
 * Call +resolveClassMethod or +resolveInstanceMethod.
 * Returns nothing; any result would be potentially out-of-date already.
+* 这里不检查方法是否已经存在
 * Does not check if the method already exists.
 **********************************************************************/
 void _class_resolveMethod(Class cls, SEL sel, id inst)
 {
+    //不是元类
     if (! cls->isMetaClass()) {
         // try [cls resolveInstanceMethod:sel]
         _class_resolveInstanceMethod(cls, sel, inst);
@@ -667,9 +672,11 @@ void _class_resolveMethod(Class cls, SEL sel, id inst)
         // try [nonMetaClass resolveClassMethod:sel]
         // and [cls resolveInstanceMethod:sel]
         _class_resolveClassMethod(cls, sel, inst);
+        //先找类
         if (!lookUpImpOrNil(cls, sel, inst, 
                             NO/*initialize*/, YES/*cache*/, NO/*resolver*/)) 
         {
+            //再找实例
             _class_resolveInstanceMethod(cls, sel, inst);
         }
     }

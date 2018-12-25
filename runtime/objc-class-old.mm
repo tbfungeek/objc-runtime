@@ -348,6 +348,7 @@ log_and_fill_cache(Class cls, Class implementer, Method meth, SEL sel)
 
 /***********************************************************************
 * _class_lookupMethodAndLoadCache.
+* Note add by xiaohai 专门为调度器使用的方法查找，其他使用lookUpImp
 * Method lookup for dispatchers ONLY. OTHER CODE SHOULD USE lookUpImp().
 * This lookup avoids optimistic cache scan because the dispatcher 
 * already tried that.
@@ -361,7 +362,8 @@ IMP _class_lookupMethodAndLoadCache3(id obj, SEL sel, Class cls)
 
 /***********************************************************************
 * lookUpImpOrForward.
-* The standard IMP lookup. 
+* The standard IMP lookup.
+* Note add by xiaohai TODO
 * initialize==NO tries to avoid +initialize (but sometimes fails)
 * cache==NO skips optimistic unlocked lookup (but uses cache elsewhere)
 * Most callers should use initialize==YES and cache==YES.
@@ -381,6 +383,7 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
 
     methodListLock.assertUnlocked();
 
+    //_class_lookupMethodAndLoadCache3跳过来的cache == NO
     // Optimistic cache lookup
     if (cache) {
         methodPC = _cache_getImp(cls, sel);
@@ -405,30 +408,35 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
     // be added but ignored indefinitely because the cache was re-filled 
     // with the old value after the cache flush on behalf of the category.
  retry:
+    // 这个锁用于方法查找和缓存填充是一个原子操作。
     methodListLock.lock();
 
+    // 尝试这个类的缓存里面找。
     // Try this class's cache.
-
     methodPC = _cache_getImp(cls, sel);
+    //如果找到了就直接跳到done流程，解锁methodListLock
     if (methodPC) goto done;
 
     // Try this class's method lists.
-
+    // 尝试这个类的方法列表中查找。（仅仅在本类中查找不查找父类不使用锁）
     meth = _class_getMethodNoSuper_nolock(cls, sel);
     if (meth) {
+        //将找到的添加到方法列表中
         log_and_fill_cache(cls, cls, meth, sel);
         methodPC = method_getImplementation(meth);
         goto done;
     }
 
     // Try superclass caches and method lists.
-
+    // 尝试在父类缓存和方法列表中寻找
     curClass = cls;
     while ((curClass = curClass->superclass)) {
         // Superclass cache.
+        // 父类缓存中查找
         meth = _cache_getMethod(curClass, sel, _objc_msgForward_impcache);
         if (meth) {
             if (meth != (Method)1) {
+                //如果在父类中找到了添加到缓存中
                 // Found the method in a superclass. Cache it in this class.
                 log_and_fill_cache(cls, curClass, meth, sel);
                 methodPC = method_getImplementation(meth);
@@ -441,18 +449,19 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
                 break;
             }
         }
-
+        // 在父类方法列表中查找
         // Superclass method list.
         meth = _class_getMethodNoSuper_nolock(curClass, sel);
         if (meth) {
+            //如果在父类中找到了添加到缓存中
             log_and_fill_cache(cls, curClass, meth, sel);
             methodPC = method_getImplementation(meth);
             goto done;
         }
     }
 
+    // 没找到实现，尝试寻找方法 resolver
     // No implementation found. Try method resolver once.
-
     if (resolver  &&  !triedResolver) {
         methodListLock.unlock();
         _class_resolveMethod(cls, sel, inst);
@@ -460,9 +469,10 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
         goto retry;
     }
 
+    //还是没找到使用forwarding
     // No implementation found, and method resolver didn't help. 
     // Use forwarding.
-
+    // 添加forwarding入口
     _cache_addForwardEntry(cls, sel);
     methodPC = _objc_msgForward_impcache;
 
