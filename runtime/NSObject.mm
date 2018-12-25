@@ -1997,6 +1997,7 @@ void arr_init(void)
     return [self class]->superclass;
 }
 
+// 某个类的准确类型不能包括子类或者父类
 + (BOOL)isMemberOfClass:(Class)cls {
     return object_getClass((id)self) == cls;
 }
@@ -2005,6 +2006,7 @@ void arr_init(void)
     return [self class] == cls;
 }
 
+// 某个类的子类或者父类
 + (BOOL)isKindOfClass:(Class)cls {
     for (Class tcls = object_getClass((id)self); tcls; tcls = tcls->superclass) {
         if (tcls == cls) return YES;

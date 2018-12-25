@@ -182,11 +182,11 @@ typedef struct {
 
 /** 
  * Returns a copy of a given object.
+ * 返回一个给定对象的副本
+ * @param obj An Objective-C object.            OC 对象
+ * @param size The size of the object \e obj.   对象的大小
  * 
- * @param obj An Objective-C object.
- * @param size The size of the object \e obj.
- * 
- * @return A copy of \e obj.
+ * @return A copy of \e obj.                    OC 对象的副本
  */
 OBJC_EXPORT id _Nullable object_copy(id _Nullable obj, size_t size)
     OBJC_AVAILABLE(10.0, 2.0, 9.0, 1.0, 2.0)
@@ -194,8 +194,9 @@ OBJC_EXPORT id _Nullable object_copy(id _Nullable obj, size_t size)
 
 /** 
  * Frees the memory occupied by a given object.
- * 
- * @param obj An Objective-C object.
+ * 释放被某个对象占用的内存空间
+ *
+ * @param obj An Objective-C object.            要释放的对象
  * 
  * @return nil
  */
@@ -206,7 +207,8 @@ object_dispose(id _Nullable obj)
 
 /** 
  * Returns the class of an object.
- * 
+ * 返回一个实例对象的Class
+ *
  * @param obj The object you want to inspect.
  * 
  * @return The class object of which \e object is an instance, 
@@ -218,7 +220,8 @@ object_getClass(id _Nullable obj)
 
 /** 
  * Sets the class of an object.
- * 
+ * 设置某个对象的Class,返回object设置之前的Class
+ * Note by xiaohai 这个一般用在什么场景？
  * @param obj The object to modify.
  * @param cls A class object.
  * 
@@ -228,10 +231,10 @@ OBJC_EXPORT Class _Nullable
 object_setClass(id _Nullable obj, Class _Nonnull cls) 
     OBJC_AVAILABLE(10.5, 2.0, 9.0, 1.0, 2.0);
 
-
 /** 
  * Returns whether an object is a class object.
- * 
+ * 判断某个类是一个对象还是类对象，类也是一个对象，如果是一个类或者元类返回true
+ *
  * @param obj An Objective-C object.
  * 
  * @return true if the object is a class or metaclass, false otherwise.
@@ -241,14 +244,18 @@ object_isClass(id _Nullable obj)
     OBJC_AVAILABLE(10.10, 8.0, 9.0, 1.0, 2.0);
 
 
+///-----------------------------------操作实例变量-------------------------------------
+
 /** 
  * Reads the value of an instance variable in an object.
- * 
+ * 返回对象中某个实例变量的值
+ *
  * @param obj The object containing the instance variable whose value you want to read.
  * @param ivar The Ivar describing the instance variable whose value you want to read.
  * 
  * @return The value of the instance variable specified by \e ivar, or \c nil if \e object is \c nil.
- * 
+ *
+ * @note 在某个实例的Ivart已经知道的情况下 object_getIvar 会比 object_getInstanceVariable快速
  * @note \c object_getIvar is faster than \c object_getInstanceVariable if the Ivar
  *  for the instance variable is already known.
  */
@@ -258,7 +265,8 @@ object_getIvar(id _Nullable obj, Ivar _Nonnull ivar)
 
 /** 
  * Sets the value of an instance variable in an object.
- * 
+ * 设置对象中某个实例变量的值
+ *
  * @param obj The object containing the instance variable whose value you want to set.
  * @param ivar The Ivar describing the instance variable whose value you want to set.
  * @param value The new value for the instance variable.
@@ -275,7 +283,9 @@ object_setIvar(id _Nullable obj, Ivar _Nonnull ivar, id _Nullable value)
 
 /** 
  * Sets the value of an instance variable in an object.
- * 
+ *
+ * 设置对象中某个实例变量的值，如果指定了某个内存管理类型那么使用指定的类型，否则使用strong作为默认的类型
+ *
  * @param obj The object containing the instance variable whose value you want to set.
  * @param ivar The Ivar describing the instance variable whose value you want to set.
  * @param value The new value for the instance variable.
@@ -293,7 +303,9 @@ object_setIvarWithStrongDefault(id _Nullable obj, Ivar _Nonnull ivar,
 
 /** 
  * Changes the value of an instance variable of a class instance.
- * 
+ *
+ * 修改某个实例的实例变量值，如果指定了某个内存管理类型那么使用指定的类型，否则使用unsafe_unretained作为默认的类型
+ *
  * @param obj A pointer to an instance of a class. Pass the object containing
  *  the instance variable whose value you wish to modify.
  * @param name A C string. Pass the name of the instance variable whose value you wish to modify.
@@ -314,7 +326,8 @@ object_setInstanceVariable(id _Nullable obj, const char * _Nonnull name,
 
 /** 
  * Changes the value of an instance variable of a class instance.
- * 
+ * 修改某个实例的实例变量值，如果指定了某个内存管理类型那么使用指定的类型，否则使用strong作为默认的类型
+ *
  * @param obj A pointer to an instance of a class. Pass the object containing
  *  the instance variable whose value you wish to modify.
  * @param name A C string. Pass the name of the instance variable whose value you wish to modify.
@@ -336,32 +349,34 @@ object_setInstanceVariableWithStrongDefault(id _Nullable obj,
 
 /** 
  * Obtains the value of an instance variable of a class instance.
- * 
- * @param obj A pointer to an instance of a class. Pass the object containing
- *  the instance variable whose value you wish to obtain.
+ * 获取某个实例变量的值
+ * @param obj A pointer to an instance of a class. Pass the object containing the instance variable whose value you wish to obtain.
+ * @param obj 指向某个类的实例，传入包含你要获取实例变量的对象
  * @param name A C string. Pass the name of the instance variable whose value you wish to obtain.
+ * @param name 要获取的实例变量的变量名
  * @param outValue On return, contains a pointer to the value of the instance variable.
- * 
+ * @param outValue 指向实例变量的指针
  * @return A pointer to the \c Ivar data structure that defines the type and name of
  *  the instance variable specified by \e name.
+ * 返回指向描述要获取实例变量结构体的指针
  */
 OBJC_EXPORT Ivar _Nullable
 object_getInstanceVariable(id _Nullable obj, const char * _Nonnull name,
                            void * _Nullable * _Nullable outValue)
     OBJC_AVAILABLE(10.0, 2.0, 9.0, 1.0, 2.0)
     OBJC_ARC_UNAVAILABLE;
+///-----------------------------------操作实例变量-------------------------------------
 
-
-/* Obtaining Class Definitions */
+///-----------------------------------获取类的定义-------------------------------------
 
 /** 
  * Returns the class definition of a specified class.
- * 
+ * 传入一个class 的名称，返回指定类的定义
  * @param name The name of the class to look up.
  * 
  * @return The Class object for the named class, or \c nil
  *  if the class is not registered with the Objective-C runtime.
- * 
+ *  objc_getClass 和 objc_lookUpClass 的区别是如果类没有注册那么objc_getClass 将会调用类的处理回调然后再次确认类是否注册了，objc_lookUpClass 不会调用类的处理回调
  * @note \c objc_getClass is different from \c objc_lookUpClass in that if the class
  *  is not registered, \c objc_getClass calls the class handler callback and then checks
  *  a second time to see whether the class is registered. \c objc_lookUpClass does 
@@ -376,7 +391,7 @@ objc_getClass(const char * _Nonnull name)
 
 /** 
  * Returns the metaclass definition of a specified class.
- * 
+ * 传入一个class 的名称，返回指定元类的定义
  * @param name The name of the class to look up.
  * 
  * @return The \c Class object for the metaclass of the named class, or \c nil if the class
@@ -393,7 +408,7 @@ objc_getMetaClass(const char * _Nonnull name)
 
 /** 
  * Returns the class definition of a specified class.
- * 
+ * 返回指定类的定义 该方法不会进行二次确认
  * @param name The name of the class to look up.
  * 
  * @return The Class object for the named class, or \c nil if the class
@@ -409,7 +424,8 @@ objc_lookUpClass(const char * _Nonnull name)
 
 /** 
  * Returns the class definition of a specified class.
- * 
+ * 返回指定类的定义 如果没找到类则杀死进程
+ *
  * @param name The name of the class to look up.
  * 
  * @return The Class object for the named class.
@@ -423,7 +439,8 @@ objc_getRequiredClass(const char * _Nonnull name)
 
 /** 
  * Obtains the list of registered class definitions.
- * 
+ * 获取注册的类定义列表
+ *
  * @param buffer An array of \c Class values. On output, each \c Class value points to
  *  one class definition, up to either \e bufferCount or the total number of registered classes,
  *  whichever is less. You can pass \c NULL to obtain the total number of registered class
@@ -433,7 +450,7 @@ objc_getRequiredClass(const char * _Nonnull name)
  *  than the number of registered classes, this function returns an arbitrary subset of the registered classes.
  * 
  * @return An integer value indicating the total number of registered classes.
- * 
+ * Objective-C 运行时库将会自动注册我们再代码中定义的类，我们也可以在运行时定义一个类并使用objc_addClass方法进行注册
  * @note The Objective-C runtime library automatically registers all the classes defined in your source code.
  *  You can create class definitions at runtime and register them with the \c objc_addClass function.
  * 
@@ -446,7 +463,9 @@ objc_getClassList(Class _Nonnull * _Nullable buffer, int bufferCount)
 
 /** 
  * Creates and returns a list of pointers to all registered class definitions.
- * 
+ *
+ * 创建并返回所有已经注册的类定义的指针列表
+ *
  * @param outCount An integer pointer used to store the number of classes returned by
  *  this function in the list. It can be \c nil.
  * 
@@ -459,11 +478,11 @@ objc_copyClassList(unsigned int * _Nullable outCount)
     OBJC_AVAILABLE(10.7, 3.1, 9.0, 1.0, 2.0);
 
 
-/* Working with Classes */
+///-----------------------------------操作类方法定义-------------------------------------
 
 /** 
  * Returns the name of a class.
- * 
+ * 返回某个类的名称
  * @param cls A class object.
  * 
  * @return The name of the class, or the empty string if \e cls is \c Nil.
@@ -474,7 +493,7 @@ class_getName(Class _Nullable cls)
 
 /** 
  * Returns a Boolean value that indicates whether a class object is a metaclass.
- * 
+ * 是否是一个元类
  * @param cls A class object.
  * 
  * @return \c YES if \e cls is a metaclass, \c NO if \e cls is a non-meta class, 
@@ -486,7 +505,9 @@ class_isMetaClass(Class _Nullable cls)
 
 /** 
  * Returns the superclass of a class.
- * 
+ *
+ * 返回一个类的父类
+ *
  * @param cls A class object.
  * 
  * @return The superclass of the class, or \c Nil if
@@ -498,27 +519,12 @@ OBJC_EXPORT Class _Nullable
 class_getSuperclass(Class _Nullable cls) 
     OBJC_AVAILABLE(10.5, 2.0, 9.0, 1.0, 2.0);
 
-/** 
- * Sets the superclass of a given class.
- * 
- * @param cls The class whose superclass you want to set.
- * @param newSuper The new superclass for cls.
- * 
- * @return The old superclass for cls.
- * 
- * @warning You should not use this function.
- */
-OBJC_EXPORT Class _Nonnull
-class_setSuperclass(Class _Nonnull cls, Class _Nonnull newSuper) 
-    __OSX_DEPRECATED(10.5, 10.5, "not recommended") 
-    __IOS_DEPRECATED(2.0, 2.0, "not recommended") 
-    __TVOS_DEPRECATED(9.0, 9.0, "not recommended") 
-    __WATCHOS_DEPRECATED(1.0, 1.0, "not recommended")
-    __BRIDGEOS_DEPRECATED(2.0, 2.0, "not recommended");
 
 /** 
  * Returns the version number of a class definition.
- * 
+ *
+ * 返回类的版本信息
+ *
  * @param cls A pointer to a \c Class data structure. Pass
  *  the class definition for which you wish to obtain the version.
  * 
@@ -532,7 +538,9 @@ class_getVersion(Class _Nullable cls)
 
 /** 
  * Sets the version number of a class definition.
- * 
+ *
+ * 设置类的版本号
+ *
  * @param cls A pointer to an Class data structure. 
  *  Pass the class definition for which you wish to set the version.
  * @param version An integer. Pass the new version number of the class definition.
@@ -550,7 +558,9 @@ class_setVersion(Class _Nullable cls, int version)
 
 /** 
  * Returns the size of instances of a class.
- * 
+ *
+ * 获取一个类的实例大小
+ *
  * @param cls A class object.
  * 
  * @return The size in bytes of instances of the class \e cls, or \c 0 if \e cls is \c Nil.
@@ -561,7 +571,8 @@ class_getInstanceSize(Class _Nullable cls)
 
 /** 
  * Returns the \c Ivar for a specified instance variable of a given class.
- * 
+ *
+ * 获取某个类的实例变量
  * @param cls The class whose instance variable you wish to obtain.
  * @param name The name of the instance variable definition to obtain.
  * 
@@ -574,7 +585,7 @@ class_getInstanceVariable(Class _Nullable cls, const char * _Nonnull name)
 
 /** 
  * Returns the Ivar for a specified class variable of a given class.
- * 
+ * 返回某个类的类变量
  * @param cls The class definition whose class variable you wish to obtain.
  * @param name The name of the class variable definition to obtain.
  * 
@@ -586,7 +597,7 @@ class_getClassVariable(Class _Nullable cls, const char * _Nonnull name)
 
 /** 
  * Describes the instance variables declared by a class.
- * 
+ * 某个类实例变量列表
  * @param cls The class to inspect.
  * @param outCount On return, contains the length of the returned array. 
  *  If outCount is NULL, the length is not returned.
@@ -603,7 +614,7 @@ class_copyIvarList(Class _Nullable cls, unsigned int * _Nullable outCount)
 
 /** 
  * Returns a specified instance method for a given class.
- * 
+ * 获取某个类的特定实例方法
  * @param cls The class you want to inspect.
  * @param name The selector of the method you want to retrieve.
  * 
@@ -619,7 +630,9 @@ class_getInstanceMethod(Class _Nullable cls, SEL _Nonnull name)
 
 /** 
  * Returns a pointer to the data structure describing a given class method for a given class.
- * 
+ *
+ * 获取某个类的特定类方法结构体
+ *
  * @param cls A pointer to a class definition. Pass the class that contains the method you want to retrieve.
  * @param name A pointer of type \c SEL. Pass the selector of the method you want to retrieve.
  * 
@@ -637,7 +650,9 @@ class_getClassMethod(Class _Nullable cls, SEL _Nonnull name)
 /** 
  * Returns the function pointer that would be called if a 
  * particular message were sent to an instance of a class.
- * 
+ *
+ * 获取某个类实例的IMP
+ *
  * @param cls The class you want to inspect.
  * @param name A selector.
  * 
@@ -656,7 +671,7 @@ class_getMethodImplementation(Class _Nullable cls, SEL _Nonnull name)
 /** 
  * Returns the function pointer that would be called if a particular 
  * message were sent to an instance of a class.
- * 
+ *
  * @param cls The class you want to inspect.
  * @param name A selector.
  * 
@@ -670,7 +685,7 @@ class_getMethodImplementation_stret(Class _Nullable cls, SEL _Nonnull name)
 
 /** 
  * Returns a Boolean value that indicates whether instances of a class respond to a particular selector.
- * 
+ * 返回当前类是否能够响应某个特定的selector
  * @param cls The class you want to inspect.
  * @param sel A selector.
  * 
@@ -685,7 +700,9 @@ class_respondsToSelector(Class _Nullable cls, SEL _Nonnull sel)
 
 /** 
  * Describes the instance methods implemented by a class.
- * 
+ *
+ * 返回某个类实现的实例方法列表
+ *
  * @param cls The class you want to inspect.
  * @param outCount On return, contains the length of the returned array. 
  *  If outCount is NULL, the length is not returned.
@@ -706,7 +723,9 @@ class_copyMethodList(Class _Nullable cls, unsigned int * _Nullable outCount)
 
 /** 
  * Returns a Boolean value that indicates whether a class conforms to a given protocol.
- * 
+ *
+ * 返回一个类是否遵循某个协议
+ *
  * @param cls The class you want to inspect.
  * @param protocol A protocol.
  *
@@ -720,7 +739,9 @@ class_conformsToProtocol(Class _Nullable cls, Protocol * _Nullable protocol)
 
 /** 
  * Describes the protocols adopted by a class.
- * 
+ *
+ * 返回当前类实现的协议
+ *
  * @param cls The class you want to inspect.
  * @param outCount On return, contains the length of the returned array. 
  *  If outCount is NULL, the length is not returned.
@@ -737,7 +758,9 @@ class_copyProtocolList(Class _Nullable cls, unsigned int * _Nullable outCount)
 
 /** 
  * Returns a property with a given name of a given class.
- * 
+ *
+ * 获取某个类的特定属性
+ *
  * @param cls The class you want to inspect.
  * @param name The name of the property you want to inspect.
  * 
@@ -751,7 +774,9 @@ class_getProperty(Class _Nullable cls, const char * _Nonnull name)
 
 /** 
  * Describes the properties declared by a class.
- * 
+ *
+ * 返回某个类的属性列表
+ *
  * @param cls The class you want to inspect.
  * @param outCount On return, contains the length of the returned array. 
  *  If \e outCount is \c NULL, the length is not returned.        
@@ -790,15 +815,18 @@ class_getWeakIvarLayout(Class _Nullable cls)
 
 /** 
  * Adds a new method to a class with a given name and implementation.
+ *
+ * 为某个类添加指定方法名和实现的新方法
+ *
+ * @param cls The class to which to add a method.   要添加方法的类
+ * @param name A selector that specifies the name of the method being added. 所添加方法方法名的selector
+ * @param imp A function which is the implementation of the new method. The function must take at least two arguments—self and _cmd.函数指针
+ * @param types An array of characters that describe the types of the arguments to the method. 用于描述参数类型的字符串
  * 
- * @param cls The class to which to add a method.
- * @param name A selector that specifies the name of the method being added.
- * @param imp A function which is the implementation of the new method. The function must take at least two arguments—self and _cmd.
- * @param types An array of characters that describe the types of the arguments to the method. 
- * 
- * @return YES if the method was added successfully, otherwise NO 
+ * @return YES if the method was added successfully, otherwise NO
  *  (for example, the class already contains a method implementation with that name).
  *
+ * class_addMethod 可以添加一个父类的重写实现，但是不会替换一个类中已经存在的方法的实现
  * @note class_addMethod will add an override of a superclass's implementation, 
  *  but will not replace an existing implementation in this class. 
  *  To change an existing implementation, use method_setImplementation.
@@ -810,7 +838,9 @@ class_addMethod(Class _Nullable cls, SEL _Nonnull name, IMP _Nonnull imp,
 
 /** 
  * Replaces the implementation of a method for a given class.
- * 
+ *
+ * 替换某个类的特定方法实现
+ *
  * @param cls The class you want to modify.
  * @param name A selector that identifies the method whose implementation you want to replace.
  * @param imp The new implementation for the method identified by name for the class identified by cls.
@@ -821,6 +851,7 @@ class_addMethod(Class _Nullable cls, SEL _Nonnull name, IMP _Nonnull imp,
  * @return The previous implementation of the method identified by \e name for the class identified by \e cls.
  * 
  * @note This function behaves in two different ways:
+ *  如果不存在那么添加，如果存在替换
  *  - If the method identified by \e name does not yet exist, it is added as if \c class_addMethod were called. 
  *    The type encoding specified by \e types is used as given.
  *  - If the method identified by \e name does exist, its \c IMP is replaced as if \c method_setImplementation were called.
@@ -833,7 +864,7 @@ class_replaceMethod(Class _Nullable cls, SEL _Nonnull name, IMP _Nonnull imp,
 
 /** 
  * Adds a new instance variable to a class.
- * 
+ * 添加一个新的实例变量到一个类
  * @return YES if the instance variable was added successfully, otherwise NO 
  *         (for example, the class already contains an instance variable with that name).
  *
@@ -851,7 +882,7 @@ class_addIvar(Class _Nullable cls, const char * _Nonnull name, size_t size,
 
 /** 
  * Adds a protocol to a class.
- * 
+ * 添加一个协议到类实现
  * @param cls The class to modify.
  * @param protocol The protocol to add to \e cls.
  * 
@@ -864,7 +895,7 @@ class_addProtocol(Class _Nullable cls, Protocol * _Nonnull protocol)
 
 /** 
  * Adds a property to a class.
- * 
+ * 添加一个属性到一个类中
  * @param cls The class to modify.
  * @param name The name of the property.
  * @param attributes An array of property attributes.
@@ -881,7 +912,7 @@ class_addProperty(Class _Nullable cls, const char * _Nonnull name,
 
 /** 
  * Replace a property of a class. 
- * 
+ * 替换属性
  * @param cls The class to modify.
  * @param name The name of the property.
  * @param attributes An array of property attributes.
@@ -929,12 +960,12 @@ objc_getFutureClass(const char * _Nonnull name)
     OBJC_ARC_UNAVAILABLE;
 
 
-/* Instantiating Classes */
+///-----------------------------------类实例化-------------------------------------
 
 /** 
  * Creates an instance of a class, allocating memory for the class in the 
  * default malloc memory zone.
- * 
+ * 创建一个类的实例，在默认的对内存中分配出一个内存zone
  * @param cls The class that you wish to allocate an instance of.
  * @param extraBytes An integer indicating the number of extra bytes to allocate. 
  *  The additional bytes can be used to store additional instance variables beyond 
@@ -949,7 +980,9 @@ class_createInstance(Class _Nullable cls, size_t extraBytes)
 
 /** 
  * Creates an instance of a class at the specific location provided.
- * 
+ *
+ * 在给定的存储位置创建一个类的实例
+ *
  * @param cls The class that you wish to allocate an instance of.
  * @param bytes The location at which to allocate an instance of \e cls.
  *  Must point to at least \c class_getInstanceSize(cls) bytes of well-aligned,
@@ -968,7 +1001,9 @@ objc_constructInstance(Class _Nullable cls, void * _Nullable bytes)
 /** 
  * Destroys an instance of a class without freeing memory and removes any
  * associated references this instance might have had.
- * 
+ *
+ * 销毁一个类的实例，注意这里不释放内存和任何与这个实例相关联的方法
+ *
  * @param obj The class instance to destroy.
  * 
  * @return \e obj. Does nothing if \e obj is nil.
@@ -980,13 +1015,13 @@ OBJC_EXPORT void * _Nullable objc_destructInstance(id _Nullable obj)
     OBJC_ARC_UNAVAILABLE;
 
 
-/* Adding Classes */
+///-----------------------------------添加类-------------------------------------
 
 /** 
  * Creates a new class and metaclass.
- * 
- * @param superclass The class to use as the new class's superclass, or \c Nil to create a new root class.
- * @param name The string to use as the new class's name. The string will be copied.
+ * 创建一个新的类和元类
+ * @param superclass The class to use as the new class's superclass, or \c Nil to create a new root class.//新类的父类
+ * @param name The string to use as the new class's name. The string will be copied. //新类的名称
  * @param extraBytes The number of bytes to allocate for indexed ivars at the end of 
  *  the class and metaclass objects. This should usually be \c 0.
  * 
@@ -996,6 +1031,7 @@ OBJC_EXPORT void * _Nullable objc_destructInstance(id _Nullable obj)
  * @note To create a new class, start by calling \c objc_allocateClassPair. 
  *  Then set the class's attributes with functions like \c class_addMethod and \c class_addIvar.
  *  When you are done building the class, call \c objc_registerClassPair. The new class is now ready for use.
+ *  要创建一个新的类，先通过objc_allocateClassPair，然后调用class_addMethod，class_addIvar 为类添加属性和方法，最后调用objc_registerClassPair进行注册。
  * @note Instance methods and instance variables should be added to the class itself. 
  *  Class methods should be added to the metaclass.
  */
@@ -1006,7 +1042,7 @@ objc_allocateClassPair(Class _Nullable superclass, const char * _Nonnull name,
 
 /** 
  * Registers a class that was allocated using \c objc_allocateClassPair.
- * 
+ * 注册新创建的一个类
  * @param cls The class you want to register.
  */
 OBJC_EXPORT void
@@ -1025,7 +1061,7 @@ objc_duplicateClass(Class _Nonnull original, const char * _Nonnull name,
 
 /** 
  * Destroy a class and its associated metaclass. 
- * 
+ * 销毁一个类以及它相关的元类
  * @param cls The class to be destroyed. It must have been allocated with 
  *  \c objc_allocateClassPair
  * 
@@ -1036,11 +1072,12 @@ objc_disposeClassPair(Class _Nonnull cls)
     OBJC_AVAILABLE(10.5, 2.0, 9.0, 1.0, 2.0);
 
 
-/* Working with Methods */
+
+///-----------------------------------方法相关操作-------------------------------------
 
 /** 
  * Returns the name of a method.
- * 
+ * 返回方法名
  * @param m The method to inspect.
  * 
  * @return A pointer of type SEL.
@@ -1053,7 +1090,7 @@ method_getName(Method _Nonnull m)
 
 /** 
  * Returns the implementation of a method.
- * 
+ * 返回方法的实现
  * @param m The method to inspect.
  * 
  * @return A function pointer of type IMP.
@@ -1064,7 +1101,7 @@ method_getImplementation(Method _Nonnull m)
 
 /** 
  * Returns a string describing a method's parameter and return types.
- * 
+ * 返回某个方法的参数及返回值类型
  * @param m The method to inspect.
  * 
  * @return A C string. The string may be \c NULL.
@@ -1075,7 +1112,7 @@ method_getTypeEncoding(Method _Nonnull m)
 
 /** 
  * Returns the number of arguments accepted by a method.
- * 
+ * 返回某个方法的参数个数
  * @param m A pointer to a \c Method data structure. Pass the method in question.
  * 
  * @return An integer containing the number of arguments accepted by the given method.
@@ -1086,7 +1123,7 @@ method_getNumberOfArguments(Method _Nonnull m)
 
 /** 
  * Returns a string describing a method's return type.
- * 
+ * 返回某个方法的返回类型
  * @param m The method to inspect.
  * 
  * @return A C string describing the return type. You must free the string with \c free().
@@ -1097,7 +1134,7 @@ method_copyReturnType(Method _Nonnull m)
 
 /** 
  * Returns a string describing a single parameter type of a method.
- * 
+ * 返回方法的某个参数类型
  * @param m The method to inspect.
  * @param index The index of the parameter to inspect.
  * 
@@ -1110,7 +1147,7 @@ method_copyArgumentType(Method _Nonnull m, unsigned int index)
 
 /** 
  * Returns by reference a string describing a method's return type.
- * 
+ * 返回一个方法的返回类型
  * @param m The method you want to inquire about. 
  * @param dst The reference string to store the description.
  * @param dst_len The maximum number of characters that can be stored in \e dst.
@@ -1124,7 +1161,7 @@ method_getReturnType(Method _Nonnull m, char * _Nonnull dst, size_t dst_len)
 
 /** 
  * Returns by reference a string describing a single parameter type of a method.
- * 
+ * 返回方法的某个参数类型
  * @param m The method you want to inquire about. 
  * @param index The index of the parameter you want to inquire about.
  * @param dst The reference string to store the description.
@@ -1145,7 +1182,7 @@ method_getDescription(Method _Nonnull m)
 
 /** 
  * Sets the implementation of a method.
- * 
+ * 为某个方法设置方法实现
  * @param m The method for which to set an implementation.
  * @param imp The implemention to set to this method.
  * 
@@ -1157,7 +1194,7 @@ method_setImplementation(Method _Nonnull m, IMP _Nonnull imp)
 
 /** 
  * Exchanges the implementations of two methods.
- * 
+ * 交换两个方法的实现
  * @param m1 Method to exchange with second method.
  * @param m2 Method to exchange with first method.
  * 
@@ -1174,11 +1211,11 @@ method_exchangeImplementations(Method _Nonnull m1, Method _Nonnull m2)
     OBJC_AVAILABLE(10.5, 2.0, 9.0, 1.0, 2.0);
 
 
-/* Working with Instance Variables */
+///-----------------------------------实例变量相关操作-------------------------------------
 
 /** 
  * Returns the name of an instance variable.
- * 
+ * 返回一个实例变量的名称
  * @param v The instance variable you want to enquire about.
  * 
  * @return A C string containing the instance variable's name.
@@ -1189,7 +1226,7 @@ ivar_getName(Ivar _Nonnull v)
 
 /** 
  * Returns the type string of an instance variable.
- * 
+ * 返回某个实例变量的类型字符串
  * @param v The instance variable you want to enquire about.
  * 
  * @return A C string containing the instance variable's type encoding.
@@ -1202,7 +1239,7 @@ ivar_getTypeEncoding(Ivar _Nonnull v)
 
 /** 
  * Returns the offset of an instance variable.
- * 
+ * 返回一个实例变量的偏移
  * @param v The instance variable you want to enquire about.
  * 
  * @return The offset of \e v.
@@ -1215,11 +1252,11 @@ ivar_getOffset(Ivar _Nonnull v)
     OBJC_AVAILABLE(10.5, 2.0, 9.0, 1.0, 2.0);
 
 
-/* Working with Properties */
+///-----------------------------------属性相关操作-------------------------------------
 
 /** 
  * Returns the name of a property.
- * 
+ * 返回某个属性的名称
  * @param property The property you want to inquire about.
  * 
  * @return A C string containing the property's name.
@@ -1230,7 +1267,7 @@ property_getName(objc_property_t _Nonnull property)
 
 /** 
  * Returns the attribute string of a property.
- * 
+ * 返回某个属性的名称
  * @param property A property.
  *
  * @return A C string containing the property's attributes.
@@ -1243,7 +1280,7 @@ property_getAttributes(objc_property_t _Nonnull property)
 
 /** 
  * Returns an array of property attributes for a property. 
- * 
+ * 返回一个属性的属性
  * @param property The property whose attributes you want copied.
  * @param outCount The number of attributes returned in the array.
  * 
@@ -1256,7 +1293,7 @@ property_copyAttributeList(objc_property_t _Nonnull property,
 
 /** 
  * Returns the value of a property attribute given the attribute name.
- * 
+ * 返回给定属性的属性值
  * @param property The property whose attribute value you are interested in.
  * @param attributeName C string representing the attribute name.
  *
@@ -1269,11 +1306,11 @@ property_copyAttributeValue(objc_property_t _Nonnull property,
     OBJC_AVAILABLE(10.7, 4.3, 9.0, 1.0, 2.0);
 
 
-/* Working with Protocols */
+///-----------------------------------协议相关操作-------------------------------------
 
 /** 
  * Returns a specified protocol.
- * 
+ * 返回特定的协议
  * @param name The name of a protocol.
  * 
  * @return The protocol named \e name, or \c NULL if no protocol named \e name could be found.
@@ -1286,7 +1323,7 @@ objc_getProtocol(const char * _Nonnull name)
 
 /** 
  * Returns an array of all the protocols known to the runtime.
- * 
+ * 返回运行时所已经知道的协议
  * @param outCount Upon return, contains the number of protocols in the returned array.
  * 
  * @return A C array of all the protocols known to the runtime. The array contains \c *outCount
@@ -1300,7 +1337,7 @@ objc_copyProtocolList(unsigned int * _Nullable outCount)
 
 /** 
  * Returns a Boolean value that indicates whether one protocol conforms to another protocol.
- * 
+ * 返回某个协议是否实现了另一个协议
  * @param proto A protocol.
  * @param other A protocol.
  * 
@@ -1320,7 +1357,7 @@ protocol_conformsToProtocol(Protocol * _Nullable proto,
 
 /** 
  * Returns a Boolean value that indicates whether two protocols are equal.
- * 
+ * 返回两个协议是否相等
  * @param proto A protocol.
  * @param other A protocol.
  * 
@@ -1332,7 +1369,7 @@ protocol_isEqual(Protocol * _Nullable proto, Protocol * _Nullable other)
 
 /** 
  * Returns the name of a protocol.
- * 
+ * 返回协议的名称
  * @param proto A protocol.
  * 
  * @return The name of the protocol \e p as a C string.
@@ -1343,7 +1380,7 @@ protocol_getName(Protocol * _Nonnull proto)
 
 /** 
  * Returns a method description structure for a specified method of a given protocol.
- * 
+ * 返回给定协议的某个方法的方法描述结构体
  * @param proto A protocol.
  * @param aSel A selector.
  * @param isRequiredMethod A Boolean value that indicates whether aSel is a required method.
@@ -1363,7 +1400,7 @@ protocol_getMethodDescription(Protocol * _Nonnull proto, SEL _Nonnull aSel,
 
 /** 
  * Returns an array of method descriptions of methods meeting a given specification for a given protocol.
- * 
+ * 返回给定协议的方法描述数组
  * @param proto A protocol.
  * @param isRequiredMethod A Boolean value that indicates whether returned methods should
  *  be required methods (pass YES to specify required methods).
@@ -1387,7 +1424,7 @@ protocol_copyMethodDescriptionList(Protocol * _Nonnull proto,
 
 /** 
  * Returns the specified property of a given protocol.
- * 
+ * 返回给定协议的特定属性
  * @param proto A protocol.
  * @param name The name of a property.
  * @param isRequiredProperty \c YES searches for a required property, \c NO searches for an optional property.
@@ -1404,7 +1441,7 @@ protocol_getProperty(Protocol * _Nonnull proto,
 
 /** 
  * Returns an array of the required instance properties declared by a protocol.
- * 
+ * 返回给定协议的required实例属性
  * @note Identical to 
  * \code
  * protocol_copyPropertyList2(proto, outCount, YES, YES);
@@ -1417,7 +1454,7 @@ protocol_copyPropertyList(Protocol * _Nonnull proto,
 
 /** 
  * Returns an array of properties declared by a protocol.
- * 
+ * 返回某个协议的属性列表
  * @param proto A protocol.
  * @param outCount Upon return, contains the number of elements in the returned array.
  * @param isRequiredProperty \c YES returns required properties, \c NO returns optional properties.
@@ -1436,7 +1473,7 @@ protocol_copyPropertyList2(Protocol * _Nonnull proto,
 
 /** 
  * Returns an array of the protocols adopted by a protocol.
- * 
+ * 返回某个协议遵循的协议
  * @param proto A protocol.
  * @param outCount Upon return, contains the number of elements in the returned array.
  * 
@@ -1452,7 +1489,7 @@ protocol_copyProtocolList(Protocol * _Nonnull proto,
 /** 
  * Creates a new protocol instance that cannot be used until registered with
  * \c objc_registerProtocol()
- * 
+ *  创建一个新的协议
  * @param name The name of the protocol to create.
  *
  * @return The Protocol instance on success, \c nil if a protocol
@@ -1466,7 +1503,7 @@ objc_allocateProtocol(const char * _Nonnull name)
 /** 
  * Registers a newly constructed protocol with the runtime. The protocol
  * will be ready for use and is immutable after this.
- * 
+ * 将一个协议注册到运行时
  * @param proto The protocol you want to register.
  */
 OBJC_EXPORT void
@@ -1475,7 +1512,7 @@ objc_registerProtocol(Protocol * _Nonnull proto)
 
 /** 
  * Adds a method to a protocol. The protocol must be under construction.
- * 
+ * 添加一个方法给协议
  * @param proto The protocol to add a method to.
  * @param name The name of the method to add.
  * @param types A C string that represents the method signature.
@@ -1492,7 +1529,7 @@ protocol_addMethodDescription(Protocol * _Nonnull proto, SEL _Nonnull name,
  * Adds an incorporated protocol to another protocol. The protocol being
  * added to must still be under construction, while the additional protocol
  * must be already constructed.
- * 
+ * 添加一个协议到另一个协议，被添加的协议必须在创建之中，另一个协议协议必须是已经构建好的
  * @param proto The protocol you want to add to, it must be under construction.
  * @param addition The protocol you want to incorporate into \e proto, it must be registered.
  */
@@ -1502,7 +1539,7 @@ protocol_addProtocol(Protocol * _Nonnull proto, Protocol * _Nonnull addition)
 
 /** 
  * Adds a property to a protocol. The protocol must be under construction. 
- * 
+ * 添加一个属性到一个正在g构建到协议中
  * @param proto The protocol to add a property to.
  * @param name The name of the property.
  * @param attributes An array of property attributes.
@@ -1520,12 +1557,14 @@ protocol_addProperty(Protocol * _Nonnull proto, const char * _Nonnull name,
     OBJC_AVAILABLE(10.7, 4.3, 9.0, 1.0, 2.0);
 
 
-/* Working with Libraries */
+///-----------------------------------Libraries相关操作-------------------------------------
 
 /** 
  * Returns the names of all the loaded Objective-C frameworks and dynamic
  * libraries.
- * 
+ *
+ * 返回oc加载的全部frameworks及动态库
+ *
  * @param outCount The number of names returned.
  * 
  * @return An array of C strings of names. Must be free()'d by caller.
@@ -1536,7 +1575,9 @@ objc_copyImageNames(unsigned int * _Nullable outCount)
 
 /** 
  * Returns the dynamic library name a class originated from.
- * 
+ *
+ * 返回某个类的动态库名称
+ *
  * @param cls The class you are inquiring about.
  * 
  * @return The name of the library containing this class.
@@ -1547,7 +1588,7 @@ class_getImageName(Class _Nullable cls)
 
 /** 
  * Returns the names of all the classes within a library.
- * 
+ * 返回某个库全部的类名
  * @param image The library or framework you are inquiring about.
  * @param outCount The number of class names returned.
  * 
@@ -1558,12 +1599,11 @@ objc_copyClassNamesForImage(const char * _Nonnull image,
                             unsigned int * _Nullable outCount) 
     OBJC_AVAILABLE(10.5, 2.0, 9.0, 1.0, 2.0);
 
-
-/* Working with Selectors */
+///-----------------------------------Selectors相关操作-------------------------------------
 
 /** 
  * Returns the name of the method specified by a given selector.
- * 
+ * 返回某个selector所指定的方法名
  * @param sel A pointer of type \c SEL. Pass the selector whose name you wish to determine.
  * 
  * @return A C string indicating the name of the selector.
@@ -1576,7 +1616,7 @@ sel_getName(SEL _Nonnull sel)
 /** 
  * Registers a method with the Objective-C runtime system, maps the method 
  * name to a selector, and returns the selector value.
- * 
+ * 注册一个selector
  * @param str A pointer to a C string. Pass the name of the method you wish to register.
  * 
  * @return A pointer of type SEL specifying the selector for the named method.
@@ -1591,7 +1631,7 @@ sel_registerName(const char * _Nonnull str)
 
 /** 
  * Returns a Boolean value that indicates whether two selectors are equal.
- * 
+ * 返回俩个selector是否相等
  * @param lhs The selector to compare with rhs.
  * @param rhs The selector to compare with lhs.
  * 
@@ -1603,8 +1643,7 @@ OBJC_EXPORT BOOL
 sel_isEqual(SEL _Nonnull lhs, SEL _Nonnull rhs) 
     OBJC_AVAILABLE(10.5, 2.0, 9.0, 1.0, 2.0);
 
-
-/* Objective-C Language Features */
+///-----------------------------------Objective-C Language 特性-------------------------------------
 
 /** 
  * This function is inserted by the compiler when a mutation
@@ -1630,7 +1669,7 @@ objc_setEnumerationMutationHandler(void (*_Nullable handler)(id _Nonnull ))
 
 /** 
  * Set the function to be called by objc_msgForward.
- * 
+ * 设置objc_msgForward调用的方法
  * @param fwd Function to be jumped to by objc_msgForward.
  * @param fwd_stret Function to be jumped to by objc_msgForward_stret.
  * 
@@ -1643,7 +1682,7 @@ objc_setForwardHandler(void * _Nonnull fwd, void * _Nonnull fwd_stret)
 /** 
  * Creates a pointer to a function that will call the block
  * when the method is called.
- * 
+ *
  * @param block The block that implements this method. Its signature should
  *  be: method_return_type ^(id self, method_args...). 
  *  The selector is not available as a parameter to this block.
@@ -1710,7 +1749,7 @@ objc_storeWeak(id _Nullable * _Nonnull location, id _Nullable obj)
     OBJC_AVAILABLE(10.7, 5.0, 9.0, 1.0, 2.0);
 
 
-/* Associative References */
+///-----------------------------------引用关联 特性-------------------------------------
 
 /**
  * Policies related to associative references.
@@ -1730,7 +1769,7 @@ typedef OBJC_ENUM(uintptr_t, objc_AssociationPolicy) {
 
 /** 
  * Sets an associated value for a given object using a given key and association policy.
- * 
+ * 为某个对象设置关联值
  * @param object The source object for the association.
  * @param key The key for the association.
  * @param value The value to associate with the key key for object. Pass nil to clear an existing association.
@@ -1746,7 +1785,7 @@ objc_setAssociatedObject(id _Nonnull object, const void * _Nonnull key,
 
 /** 
  * Returns the value associated with a given object for a given key.
- * 
+ * 获取某个对象的关联值
  * @param object The source object for the association.
  * @param key The key for the association.
  * 
@@ -1760,7 +1799,7 @@ objc_getAssociatedObject(id _Nonnull object, const void * _Nonnull key)
 
 /** 
  * Removes all associations for a given object.
- * 
+ * 删除某个对象的所有关联
  * @param object An object that maintains associated objects.
  * 
  * @note The main purpose of this function is to make it easy to return an object 
@@ -1846,8 +1885,7 @@ OBJC_EXPORT void objc_setHook_getImageName(objc_hook_getImageName _Nonnull newVa
 #define _C_CONST    'r'
 
 
-/* Obsolete types */
-
+/* 过时的方法及类型 */
 #if !__OBJC2__
 
 #define CLS_GETINFO(cls,infomask)        ((cls)->info & (infomask))
