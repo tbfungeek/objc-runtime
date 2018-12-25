@@ -1,0 +1,6 @@
+[submodule "RuntimePDF"]
+	path = RuntimePDF
+	url = https://github.com/DeveloperErenLiu/RuntimePDF.git
+[submodule "Aspects"]
+	path = Aspects
+	url = https://github.com/steipete/Aspects.git
