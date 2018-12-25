@@ -519,6 +519,24 @@ OBJC_EXPORT Class _Nullable
 class_getSuperclass(Class _Nullable cls) 
     OBJC_AVAILABLE(10.5, 2.0, 9.0, 1.0, 2.0);
 
+/**
+ * Sets the superclass of a given class.
+ *
+ * @param cls The class whose superclass you want to set.
+ * @param newSuper The new superclass for cls.
+ *
+ * @return The old superclass for cls.
+ *
+ * @warning You should not use this function.
+ */
+OBJC_EXPORT Class _Nonnull
+class_setSuperclass(Class _Nonnull cls, Class _Nonnull newSuper)
+__OSX_DEPRECATED(10.5, 10.5, "not recommended")
+__IOS_DEPRECATED(2.0, 2.0, "not recommended")
+__TVOS_DEPRECATED(9.0, 9.0, "not recommended")
+__WATCHOS_DEPRECATED(1.0, 1.0, "not recommended")
+__BRIDGEOS_DEPRECATED(2.0, 2.0, "not recommended");
+
 
 /** 
  * Returns the version number of a class definition.
