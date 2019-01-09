@@ -466,6 +466,7 @@ static bool dataSegmentsContain(const void *ptr) {
 
 /***********************************************************************
 * isKnownClass
+* 在class是runtime所知道的类的时候返回true。(在共享缓存内部，加载镜像的数据段或者通过obj_allocateClassPair分配的class)
 * Return true if the class is known to the runtime (located within the
 * shared cache, within the data segment of a loaded image, or has been
 * allocated with obj_allocateClassPair).
@@ -477,6 +478,7 @@ static bool isKnownClass(Class cls) {
     // Checking allocatedClasses is fast, but may not be common,
     // depending on what the program is doing. Checking if data segments
     // contain the address is slow, so do it last.
+    // 先检查共享区域，再检查allocatedClasses，最后检查数据段
     return (sharedRegionContains(cls) ||
             NXHashMember(allocatedClasses, cls) ||
             dataSegmentsContain(cls));
@@ -505,6 +507,7 @@ static void addClassTableEntry(Class cls, bool addMeta = true) {
 
 /***********************************************************************
 * checkIsKnownClass
+* 在所有已经知道的类中查找指定的类，如果没找到会抛出fatal error
 * Checks the given class against the list of all known classes. Dies
 * with a fatal error if the class is not known.
 * Locking: runtimeLock must be held by the caller.
@@ -574,6 +577,7 @@ static void removeUnattachedCategoryForClass(category_t *cat, Class cls)
 
 /***********************************************************************
 * unattachedCategoriesForClass
+* 返回一个类中未连接的分类，并从list中删除
 * Returns the list of unattached categories for a class, and 
 * deletes them from the list. 
 * The result must be freed by the caller. 
@@ -709,19 +713,21 @@ fixupMethodList(method_list_t *mlist, bool bundleCopy, bool sort)
     mlist->setFixedUp();
 }
 
-
+// prepareMethodLists(cls, &list, 1, YES, isBundleClass(cls));
 static void 
 prepareMethodLists(Class cls, method_list_t **addedLists, int addedCount, 
-                   bool baseMethods, bool methodsFromBundle)
-{
+                   bool baseMethods, bool methodsFromBundle) {
+    //确保读写锁
     runtimeLock.assertLocked();
 
     if (addedCount == 0) return;
 
-    // Don't scan redundantly
+    // 不扫描多余的方法
     bool scanForCustomRR = !cls->hasCustomRR();
     bool scanForCustomAWZ = !cls->hasCustomAWZ();
 
+    // 对于一些类的基本方法存在一些特殊的RR/AWZ例子，但是这里基本方法不需要扫描RR/AWZ，
+    // 默认的RR/AWZ不能在setInitialized之前调用，因此我们不需要在这里处理任何特殊的例子
     // There exist RR/AWZ special cases for some class's base methods. 
     // But this code should never need to scan base methods for RR/AWZ: 
     // default RR/AWZ cannot be set before setInitialized().
@@ -743,6 +749,7 @@ prepareMethodLists(Class cls, method_list_t **addedLists, int addedCount,
             fixupMethodList(mlist, methodsFromBundle, true/*sort*/);
         }
 
+        //如果是基本方法就不需要执行下面方法
         // Scan for method implementations tracked by the class's flags
         if (scanForCustomRR  &&  methodListImplementsRR(mlist)) {
             cls->setHasCustomRR();
@@ -755,7 +762,7 @@ prepareMethodLists(Class cls, method_list_t **addedLists, int addedCount,
     }
 }
 
-
+// 将某个类的分类中方法列表属性以及协议添加到当前类，假设cats中的类别都已加载并按加载顺序排序，老的分类优先放在前面
 // Attach method lists and properties and protocols from categories to a class.
 // Assumes the categories in cats are all loaded and sorted by load order, 
 // oldest categories first.
@@ -781,6 +788,7 @@ attachCategories(Class cls, category_list *cats, bool flush_caches)
     int protocount = 0;
     int i = cats->count;
     bool fromBundle = NO;
+    //i 表示分类列表序号
     while (i--) {
         auto& entry = cats->list[i];
 
@@ -802,6 +810,7 @@ attachCategories(Class cls, category_list *cats, bool flush_caches)
         }
     }
 
+    //将catories中的方法属性以及协议添加到rw中
     auto rw = cls->data();
 
     prepareMethodLists(cls, mlists, mcount, NO, fromBundle);
@@ -819,16 +828,20 @@ attachCategories(Class cls, category_list *cats, bool flush_caches)
 
 /***********************************************************************
 * methodizeClass
+* 修复cls的方法列表、协议列表和属性列表。添加任何明显的分类
 * Fixes up cls's method list, protocol list, and property list.
 * Attaches any outstanding categories.
 * Locking: runtimeLock must be held by the caller
 **********************************************************************/
 static void methodizeClass(Class cls)
 {
+    //检查锁
     runtimeLock.assertLocked();
-
+    //是否是元类
     bool isMeta = cls->isMetaClass();
+    //获取可读写字段
     auto rw = cls->data();
+    //获取只读字段
     auto ro = rw->ro;
 
     // Methodizing for the first time
@@ -838,19 +851,23 @@ static void methodizeClass(Class cls)
     }
 
     // Install methods and properties that the class implements itself.
+    // 加载类自身实现的方法和属性
     method_list_t *list = ro->baseMethods();
     if (list) {
-        prepareMethodLists(cls, &list, 1, YES, isBundleClass(cls));
+        prepareMethodLists(cls, &list/*自身实现的方法列表*/, 1, YES, isBundleClass(cls));
+        //将ro->baseMethods方法添加到rw->methods
         rw->methods.attachLists(&list, 1);
     }
 
     property_list_t *proplist = ro->baseProperties;
     if (proplist) {
+        //将ro->baseProperties方法添加到rw->properties
         rw->properties.attachLists(&proplist, 1);
     }
 
     protocol_list_t *protolist = ro->baseProtocols;
     if (protolist) {
+        //将ro->baseProtocols方法添加到rw->protocols
         rw->protocols.attachLists(&protolist, 1);
     }
 
@@ -862,6 +879,8 @@ static void methodizeClass(Class cls)
     }
 
     // Attach categories.
+    // 添加分类
+    // 先解除分类与cls的关联
     category_list *cats = unattachedCategoriesForClass(cls, true /*realizing*/);
     attachCategories(cls, cats, false /*don't flush caches*/);
 
@@ -1341,6 +1360,7 @@ static void addRemappedClass(Class oldcls, Class newcls)
 
 /***********************************************************************
 * remapClass
+* 返回cls实时的class指针，这个指针可能指向被重新分配的class结构
 * Returns the live class pointer for cls, which may be pointing to 
 * a class struct that has been reallocated.
 * Returns nil if cls is ignored because of weak linking.
@@ -1509,6 +1529,7 @@ static Class getNonMetaClass(Class metacls, id inst)
 
 /***********************************************************************
 * _class_getNonMetaClass
+* 返回这个类或元类的普通类。
 * Return the ordinary class for this class or metaclass. 
 * Used by +initialize. 
 * Locking: acquires runtimeLock
@@ -1849,7 +1870,9 @@ static void reconcileInstanceVariables(Class cls, Class supercls, const class_ro
 
 
 /***********************************************************************
-* realizeClass
+* realizeClassd
+* 调用realizeClass方法是申请class_rw_t的可读写空间。
+* 对class执行第一次初始化。包括分配它的读写data返回该类的实际class数据结构，runtimeLock 必须进行写锁住
 * Performs first-time initialization on class cls, 
 * including allocating its read-write data.
 * Returns the real class structure for the class. 
@@ -1857,6 +1880,7 @@ static void reconcileInstanceVariables(Class cls, Class supercls, const class_ro
 **********************************************************************/
 static Class realizeClass(Class cls)
 {
+    //判断是否已经上锁
     runtimeLock.assertLocked();
 
     const class_ro_t *ro;
@@ -1865,29 +1889,26 @@ static Class realizeClass(Class cls)
     Class metacls;
     bool isMeta;
 
-    if (!cls) return nil;
-    if (cls->isRealized()) return cls;
-    assert(cls == remapClass(cls));
-
-    // fixme verify class is not in an un-dlopened part of the shared cache?
-
+    if (!cls) return nil;               //cls 不能为空
+    if (cls->isRealized()) return cls;  //cls 如果已经初始化直接返回
+    assert(cls == remapClass(cls));     //cls 没有重新分配，remapClass 返回指向cls的实时指针
+    // 【✨】获取只读结构体
     ro = (const class_ro_t *)cls->data();
     if (ro->flags & RO_FUTURE) {
-        // This was a future class. rw data is already allocated.
-        rw = cls->data();
-        ro = cls->data()->ro;
-        cls->changeInfo(RW_REALIZED|RW_REALIZING, RW_FUTURE);
+        // 什么是future class 但是这种类的rw data会事先分配好
+        rw = cls->data();       //读写部分
+        ro = cls->data()->ro;   //只写部分
+        cls->changeInfo(RW_REALIZED|RW_REALIZING, RW_FUTURE);//修改cls标志信息
     } else {
         // Normal class. Allocate writeable class data.
-        rw = (class_rw_t *)calloc(sizeof(class_rw_t), 1);
-        rw->ro = ro;
-        rw->flags = RW_REALIZED|RW_REALIZING;
-        cls->setData(rw);
+        rw = (class_rw_t *)calloc(sizeof(class_rw_t), 1);           //分配读写数据
+        rw->ro = ro;                                                //只写数据
+        rw->flags = RW_REALIZED|RW_REALIZING;                       //设置已经初始化标志
+        cls->setData(rw);                                           //为cls设置data数据
     }
-
-    isMeta = ro->flags & RO_META;
-
-    rw->version = isMeta ? 7 : 0;  // old runtime went up to 6
+    
+    isMeta = ro->flags & RO_META;                                   //判断是否是元类
+    rw->version = isMeta ? 7 : 0;  // old runtime went up to 6      //版本信息，旧版本的版本信息为6
 
 
     // Choose an index for this class.
@@ -1899,10 +1920,11 @@ static Class realizeClass(Class cls)
                      cls->nameForLogging(), isMeta ? " (meta)" : "", 
                      (void*)cls, ro, cls->classArrayIndex());
     }
-
+    
     // Realize superclass and metaclass, if they aren't already.
     // This needs to be done after RW_REALIZED is set above, for root classes.
     // This needs to be done after class index is chosen, for root metaclasses.
+    // 【✨】为supercls，metacls 分配空间
     supercls = realizeClass(remapClass(cls->superclass));
     metacls = realizeClass(remapClass(cls->ISA()));
 
@@ -1941,17 +1963,21 @@ static Class realizeClass(Class cls)
 // SUPPORT_NONPOINTER_ISA
 #endif
 
-    // Update superclass and metaclass in case of remapping
-    cls->superclass = supercls;
+    // 【✨】 Update superclass and metaclass in case of remapping
+    cls->superclass = supercls; //将supercls赋给 cls->superclass
+    
     cls->initClassIsa(metacls);
 
+    // 调整实例变量的偏移和布局，这个将会重新分配class_ro_t
     // Reconcile instance variable offsets / layout.
     // This may reallocate class_ro_t, updating our ro variable.
     if (supercls  &&  !isMeta) reconcileInstanceVariables(cls, supercls, ro);
 
+    //设置对象尺寸
     // Set fastInstanceSize if it wasn't set already.
     cls->setInstanceSize(ro->instanceSize);
 
+    //【✨】从ro中拷贝部分标志位到rw 字段
     // Copy some flags from ro to rw
     if (ro->flags & RO_HAS_CXX_STRUCTORS) {
         cls->setHasCxxDtor();
@@ -1960,14 +1986,19 @@ static Class realizeClass(Class cls)
         }
     }
 
-    // Connect this class to its superclass's subclass lists
+    // 【✨】 Connect this class to its superclass's subclass lists
+    // 将当前class与父类相关连
     if (supercls) {
+        //将当前类作为supercls的子类添加到父类的子类列表
         addSubclass(supercls, cls);
     } else {
+        //将当前类作为根类
         addRootClass(cls);
     }
-
+    
+    //【✨】实例化类结构
     // Attach categories
+    // 使得类有条理
     methodizeClass(cls);
 
     return cls;
@@ -4702,7 +4733,8 @@ static method_t *search_method_list(const method_list_t *mlist, SEL sel)
 {
     int methodListIsFixedUp = mlist->isFixedUp();
     int methodListHasExpectedSize = mlist->entsize() == sizeof(method_t);
-    
+    //在search_method_list函数中，会去判断当前methodList是否有序，如果有序，会调用findMethodInSortedMethodList方法，这个方法里面的实现是一个二分搜索
+    //。如果非有序，就调用线性的傻瓜式遍历搜索。
     if (__builtin_expect(methodListIsFixedUp && methodListHasExpectedSize, 1)) {
         return findMethodInSortedMethodList(sel, mlist);
     } else {
@@ -4734,7 +4766,7 @@ getMethodNoSuper_nolock(Class cls, SEL sel)
     assert(cls->isRealized());
     // fixme nil cls? 
     // fixme nil sel?
-
+    //在getMethodNoSuper_nolock方法中，会遍历一次methodList链表，从begin一直遍历到end。遍历过程中会调用search_method_list函数。
     for (auto mlists = cls->data()->methods.beginLists(), 
               end = cls->data()->methods.endLists(); 
          mlists != end;
@@ -4851,16 +4883,19 @@ IMP _class_lookupMethodAndLoadCache3(id obj, SEL sel, Class cls)
 * lookUpImpOrForward.
 * Note add by xiaohai
 * 标准的IMP查找
-* The standard IMP lookup. 
+* The standard IMP lookup.
+* initialize==NO 避免调用+initialize
+* cache==NO 跳过缓存查找
+* 对于大多数调用者来说必须使用initialize==YES cache==YES
 * initialize==NO tries to avoid +initialize (but sometimes fails)
 * cache==NO skips optimistic unlocked lookup (but uses cache elsewhere)
 * Most callers should use initialize==YES and cache==YES.
 * inst是class的一个实例或者子类实例
 * inst is an instance of cls or a subclass thereof, or nil if none is known. 
 *   If cls is an un-initialized metaclass then a non-nil inst is faster.
-* May return _objc_msgForward_impcache. IMPs destined for external use 
+*   May return _objc_msgForward_impcache. IMPs destined for external use
 *   must be converted to _objc_msgForward or _objc_msgForward_stret.
-* 如果你不想前向查找使用lookUpImpOrNil
+*    如果你不想前向查找使用lookUpImpOrNil
 *   If you don't want forwarding at all, use lookUpImpOrNil() instead.
 **********************************************************************/
 IMP lookUpImpOrForward(Class cls, SEL sel, id inst, 
@@ -4869,11 +4904,14 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
     IMP imp = nil;
     bool triedResolver = NO;
 
-    runtimeLock.assertUnlocked();
+    //确保进入的时候是没锁住的
+    runtimeLock.assertUnlocked(); //这个是加一个读写锁，保证线程安全。
 
-    // Optimistic cache lookup
+    //优化缓存查找传入的参数cache 用于表示是否找到cache的布尔量，
+    //从_class_lookupMethodAndLoadCache3进来的是在缓存中已经找过并且没找到的情景
     if (cache) {
-        //从缓存中获取IMP,如果在缓存中则直接返回
+        //如果传入的是YES，那么就会调用cache_getImp方法去找到缓存里面的IMP
+        //cache_getImp会把找到的IMP放在r11中
         imp = cache_getImp(cls, sel);
         if (imp) return imp;
     }
@@ -4888,15 +4926,19 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
     // the cache was re-filled with the old value after the cache flush on
     // behalf of the category.
 
+    //锁住读写锁
     runtimeLock.lock();
+    //在所有已经知道的类中查找指定的类，如果没找到会抛出fatal error
     checkIsKnownClass(cls);
-
+    //如果已经初始化会在objc_class对应的标识位设置为true
     if (!cls->isRealized()) {
+        //实例化类结构
         realizeClass(cls);
     }
 
     if (initialize  &&  !cls->isInitialized()) {
         runtimeLock.unlock();
+        //_class_initialize是类初始化的过程。它会发送一个initialize消息给当前类
         _class_initialize (_class_getNonMetaClass(cls, inst));
         runtimeLock.lock();
         // If sel == initialize, _class_initialize will send +initialize and 
@@ -4910,22 +4952,25 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
     runtimeLock.assertLocked();
 
     // Try this class's cache.
-
+    // 从缓存中查找方法实现
     imp = cache_getImp(cls, sel);
     if (imp) goto done;
 
+    //尝试在本类的方法列表中查找
     // Try this class's method lists.
     {
         Method meth = getMethodNoSuper_nolock(cls, sel);
         if (meth) {
+            //找到的情况下添加到缓存并返回方法实现
             log_and_fill_cache(cls, meth->imp, sel, inst, cls);
             imp = meth->imp;
             goto done;
         }
     }
-
+    //尝试在父类的缓存和方法列表中查找
     // Try superclass caches and method lists.
     {
+        //如果以上尝试都失败了，接下来就会循环尝试父类的缓存和方法列表。一直找到NSObject为止。因为NSObject的superclass为nil，才跳出循环。
         unsigned attempts = unreasonableClassCount();
         for (Class curClass = cls->superclass;
              curClass != nil;
@@ -4961,25 +5006,33 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
             }
         }
     }
-
+    
+    //没有找到实现方法，尝试寻找方法的解决者
     // No implementation found. Try method resolver once.
-
     if (resolver  &&  !triedResolver) {
         runtimeLock.unlock();
+        //如果父类找到NSObject还没有找到，那么就会开始尝试_class_resolveMethod方法。
+        //注意，这些需要打开读锁，因为开发者可能会在这里动态增加方法实现，所以不需要缓存结果。
+        //此处虽然锁被打开，可能会出现线程问题，所以在执行完_class_resolveMethod方法之后，会goto retry，重新执行一遍之前查找的过程。
+        // try [nonMetaClass resolveClassMethod:sel]
+        // and [cls resolveInstanceMethod:sel]
         _class_resolveMethod(cls, sel, inst);
         runtimeLock.lock();
+        //寻找用户指定的方法的解决者
         // Don't cache the result; we don't hold the lock so it may have 
         // changed already. Re-do the search from scratch instead.
         triedResolver = YES;
+        //重新查找
         goto retry;
     }
 
     // No implementation found, and method resolver didn't help. 
     // Use forwarding.
-
+    // 消息转发
     imp = (IMP)_objc_msgForward_impcache;
+    //---> __objc_msgForward_impcache --> __objc_msgForward --> __objc_forward_handler --> objc_defaultForwardHandler
+    //在cache_fill中还会去调用cache_fill_nolock函数，如果缓存中的内容大于容量的 3/4就会扩充缓存，使缓存的大小翻倍。找到第一个空的 bucket_t，以 (SEL, IMP)的形式填充进去。
     cache_fill(cls, sel, imp, inst);
-
  done:
     runtimeLock.unlock();
 

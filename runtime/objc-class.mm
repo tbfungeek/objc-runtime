@@ -663,6 +663,9 @@ static void _class_resolveInstanceMethod(Class cls, SEL sel, id inst)
 **********************************************************************/
 void _class_resolveMethod(Class cls, SEL sel, id inst)
 {
+    
+    //这个函数首先判断是否是meta-class类，如果不是元类，就执行_class_resolveInstanceMethod，
+    //如果是元类，执行_class_resolveClassMethod。这里有一个lookUpImpOrNil的函数调用。
     //不是元类
     if (! cls->isMetaClass()) {
         // try [cls resolveInstanceMethod:sel]
@@ -832,6 +835,7 @@ bool logMessageSend(bool isClassMethod,
 {
     char	buf[ 1024 ];
 
+    //创建并打开log文件
     // Create/open the log file
     if (objcMsgLogFD == (-1))
     {
@@ -844,7 +848,7 @@ bool logMessageSend(bool isClassMethod,
             return true;
         }
     }
-
+    // 写日志到日志文件
     // Make the log entry
     snprintf(buf, sizeof(buf), "%c %s %s %s\n",
             isClassMethod ? '+' : '-',

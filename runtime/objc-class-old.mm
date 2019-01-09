@@ -38,7 +38,7 @@ static Method _class_getMethodNoSuper(Class cls, SEL sel);
 static Method _class_getMethodNoSuper_nolock(Class cls, SEL sel);
 static void flush_caches(Class cls, bool flush_meta);
 
-
+// 已经释放的对象的isa被指向dummy类，这样在发送者就不需要检查Nil类
 // Freed objects have their isa set to point to this dummy class.
 // This avoids the need to check for Nil classes in the messenger.
 static const void* freedObjectClass[12] =
@@ -59,7 +59,10 @@ static const void* freedObjectClass[12] =
 
 
 /***********************************************************************
-* _class_getFreedObjectClass.  Return a pointer to the dummy freed
+* _class_getFreedObjectClass.
+* 返回一个指向已经释放的对象，已经释放对象的isa指针被指向freedObjectClass的指针替换，
+* 所以我们可以捕获已经释放对象的用法
+* Return a pointer to the dummy freed
 * object class.  Freed objects get their isa pointers replaced with
 * a pointer to the freedObjectClass, so that we can catch usages of
 * the freed object.
@@ -376,27 +379,34 @@ IMP _class_lookupMethodAndLoadCache3(id obj, SEL sel, Class cls)
 IMP lookUpImpOrForward(Class cls, SEL sel, id inst, 
                        bool initialize, bool cache, bool resolver)
 {
-    Class curClass;
-    IMP methodPC = nil;
-    Method meth;
+    Class curClass;      // 当前类对象
+    IMP methodPC = nil;  // 用于保存最终查找到的函数指针并返回
+    Method meth;         // 定义了方法的一个结构体，可通过meth->imp获取函数指针
     bool triedResolver = NO;
 
     methodListLock.assertUnlocked();
 
     //_class_lookupMethodAndLoadCache3跳过来的cache == NO
-    // Optimistic cache lookup
+    // 优化缓存查找
     if (cache) {
         methodPC = _cache_getImp(cls, sel);
         if (methodPC) return methodPC;    
     }
-
+    
+    //检查消息接收对象是否已经释放,如果是已经释放的对象则返回freedHandler
+    //_freedHandler会打印出 “message %s sent to freed object=”这个提示
     // Check for freed class
     if (cls == _class_getFreedObjectClass())
         return (IMP) _freedHandler;
 
-    // Check for +initialize
+    // 确保该类已被初始化，如果没有就调用类方法+initialize，这里也说明了为什么OC的类会在
+    // 第一次接收消息后调用+initialize进行初始化，相反的，如果想要代码在类注册runtime的
+    // 时候就运行，可以将代码写在+load方法里
+    // initialize 类第一次接受消息的时候调用，load 类注册runtime的时候就运行
     if (initialize  &&  !cls->isInitialized()) {
         _class_initialize (_class_getNonMetaClass(cls, inst));
+        // 如果sel == initialize，_class_initialize 将会发送+initialize
+        // 消息发送者会在这个过程结束后再发送initialize
         // If sel == initialize, _class_initialize will send +initialize and 
         // then the messenger will send +initialize again after this 
         // procedure finishes. Of course, if this is not being called 

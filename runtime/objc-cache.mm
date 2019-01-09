@@ -569,9 +569,12 @@ static void cache_fill_nolock(Class cls, SEL sel, IMP imp, id receiver)
     // before we grabbed the cacheUpdateLock.
     if (cache_getImp(cls, sel)) return;
 
+    //获取对象的缓存
     cache_t *cache = getCache(cls);
+    //获取要缓存方法的key
     cache_key_t key = getKey(sel);
 
+    // 如果缓存大于分配的3/4空间那么就会对缓存空间进行扩展
     // Use the cache as-is if it is less than 3/4 full
     mask_t newOccupied = cache->occupied() + 1;
     mask_t capacity = cache->capacity();
@@ -590,6 +593,7 @@ static void cache_fill_nolock(Class cls, SEL sel, IMP imp, id receiver)
     // Scan for the first unused slot and insert there.
     // There is guaranteed to be an empty slot because the 
     // minimum size is 4 and we resized at 3/4 full.
+    // 查找空位置写入
     bucket_t *bucket = cache->find(key, receiver);
     if (bucket->key() == 0) cache->incrementOccupied();
     bucket->set(key, imp);

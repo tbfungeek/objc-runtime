@@ -865,9 +865,25 @@ void _objc_atfork_child()
     lockdebug_assert_no_locks_locked();
 }
 
-
+//iOS 中用到的所有系统 framework 都是动态链接的，类比成插头和插排，静态链接的代码在编译后的静态链接过程就将插头和插排一个个插好，
+//运行时直接执行二进制文件；而动态链接需要在程序启动时去完成“插插销”的过程，所以在我们写的代码执行前，动态连接器需要完成准备工作。
+//系统使用动态链接有几点好处：
+//代码共用：很多程序都动态链接了这些 lib，但它们在内存和磁盘中中只有一份
+//易于维护：由于被依赖的 lib 是程序执行时才 link 的，所以这些 lib 很容易做更新，比如libSystem.dylib 是 libSystem.B.dylib 的替身，哪天想升级直接换成 libSystem.C.dylib 然后再替换替身就行了
+//减少可执行文件体积：相比静态链接，动态链接在编译时不需要打进去，所以可执行文件的体积要小很多
+//dyld（the dynamic link editor），Apple 的动态链接器，系统 kernel 做好启动程序的初始准备后，交给 dyld 负责，
+//1. dyld 开始将程序二进制文件初始化
+//2. 交由 ImageLoader 读取 image，其中包含了我们的类、方法等各种符号
+//3. 由于 runtime 向 dyld 绑定了回调，当 image 加载到内存后，dyld 会通知 runtime 进行处理
+//4. runtime 接手后调用 map_images 做解析和处理，接下来 load_images 中调用 call_load_methods 方法，
+//5. 遍历所有加载进来的 Class，按继承层级依次调用 Class 的 +load 方法和其 Category 的 +load 方法
+//6.至此，可执行文件中和动态库所有的符号（Class，Protocol，Selector，IMP，…）都已经按格式成功加载到内存中，被 runtime 所管理，再这之后，runtime 的那些方法（动态添加 Class、swizzle 等等才能生效）
+//重载自己 Class 的 +load 方法时需不需要调父类？runtime 负责按继承顺序递归调用，所以我们不能调 super
+//动态链接依赖库，并由 runtime 负责加载成 objc 定义的结构，所有初始化工作结束后，dyld 调用真正的 main 函数。
+//当这一切都结束时，dyld 会清理现场，将调用栈回归，只剩下：main()
 /***********************************************************************
 * _objc_init
+* 引导初始化,用Dyld注册我们的镜像通知程序 这里是 objc 和 runtime 的初始化入口
 * Bootstrap initialization. Registers our image notifier with dyld.
 * Called by libSystem BEFORE library initialization time
 **********************************************************************/

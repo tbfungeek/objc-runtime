@@ -488,6 +488,7 @@ void _class_initialize(Class cls)
     Class supercls;
     bool reallyInitialize = NO;
 
+    // 确保父类在初始化类之前已经初始化过了
     // Make sure super is done initializing BEFORE beginning to initialize cls.
     // See note about deadlock above.
     supercls = cls->superclass;

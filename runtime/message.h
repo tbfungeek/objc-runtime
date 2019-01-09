@@ -89,7 +89,14 @@ objc_msgSendSuper(void /* struct objc_super *super, SEL op, ... */ )
  * 如果调用的是[obj xxxxx] 那么将会调用objc_msgSend objc_msgSend_stret
  * 如果返回的值是带有结构的将会调用 objc_msgSendSuper_stret objc_msgSend_stret 也就是带有stret的
  *
- * Todo by xiaohai 带super。stret和不带的有啥区别 
+ * Todo by xiaohai 带super。stret和不带的有啥区别
+ * 这里需要注意的是SEL SEL与类不是强关联的只与函数名相关联，与函数参数类型也无关，
+ * 在receiver拿到对应的selector之后，如果自己无法执行这个方法，那么该条消息要被转发。或者临时动态的添加方法实现。如果转发到最后依旧没法处理，程序就会崩溃。
+ * 检查这个selector是否需要忽略（什么情况下需要忽略？）
+ * 检查消息的接收者是否为空，如果是空并且有相应的nil处理函数，就跳转到相应的处理函数
+ * 如果没有处理nil的函数，就自动清理现场并返回。
+ * 如果消息接收者不是空的情况下会先在class的方法缓存中查找，如果没有找到就到class的方法列表中查找，如果没有找到就继续顺着继承链继续查找
+ * 如果没有找到还有一个机会就是通过指定resolver，如果resolver还是没有找到，那就到事件的转发机制
  * @note When it encounters a method call, the compiler generates a call to one of the
  *  functions \c objc_msgSend, \c objc_msgSend_stret, \c objc_msgSendSuper, or \c objc_msgSendSuper_stret.
  *  Messages sent to an object’s superclass (using the \c super keyword) are sent using \c objc_msgSendSuper; 

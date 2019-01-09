@@ -1114,6 +1114,7 @@ struct objc_class : objc_object {
     cache_t cache;             // formerly cache pointer and vtable
     class_data_bits_t bits;    // class_rw_t * plus custom rr/alloc flags
 
+    //data
     class_rw_t *data() { 
         return bits.data();
     }
@@ -1121,6 +1122,7 @@ struct objc_class : objc_object {
         bits.setData(newData);
     }
 
+    //info
     void setInfo(uint32_t set) {
         assert(isFuture()  ||  isRealized());
         data()->setFlags(set);
@@ -1138,6 +1140,7 @@ struct objc_class : objc_object {
         data()->changeFlags(set, clear);
     }
 
+    //RR是什么东西
     bool hasCustomRR() {
         return ! bits.hasDefaultRR();
     }
@@ -1148,6 +1151,7 @@ struct objc_class : objc_object {
     void setHasCustomRR(bool inherited = false);
     void printCustomRR(bool inherited);
 
+    //AWZ是什么东西
     bool hasCustomAWZ() {
         return ! bits.hasDefaultAWZ();
     }
@@ -1158,6 +1162,7 @@ struct objc_class : objc_object {
     void setHasCustomAWZ(bool inherited = false);
     void printCustomAWZ(bool inherited);
 
+    //RequireRawIsa是什么东西
     bool instancesRequireRawIsa() {
         return bits.instancesRequireRawIsa();
     }
@@ -1376,17 +1381,35 @@ struct swift_class_t : objc_class {
         return (void *)((uint8_t *)this - classAddressOffset);
     }
 };
+//Objective-C的运行是依赖OC的runtime的，而OC的runtime和其他系统库一样，是OS X和iOS通过dyld动态加载的。
 
+//从category的定义也可以看出category的可为（可以添加实例方法，类方法，甚至可以实现协议，添加属性）和不可为（无法添加实例变量）。
+//catogies 使用场景：
+//可以把类的实现分开在几个不同的文件里面。这样做有几个显而易见的好处
+//a)可以减少单个文件的体积
+//b)可以把不同的功能组织到不同的category里
+//c)可以由多个开发者共同完成一个类
+//d)可以按需加载想要的category
+//声明私有方法
+//模拟多继承
+//把framework的私有方法公开
 
+//category和extension
+//extension和有名字的category几乎完全是两个东西
+//extension在编译期决议，它就是类的一部分，在编译期和头文件里的@interface以及实现文件里的@implement一起形成一个完整的类，它伴随类的产生而产生，亦随之一起消亡。
+//extension一般用来隐藏类的私有信息，你必须有一个类的源码才能为一个类添加extension，所以你无法为系统的类比如NSString添加extension。
+//但是category则完全不一样，它是在运行期决议的。
+//就category和extension的区别来看，我们可以推导出一个明显的事实，extension可以添加实例变量，而category是无法添加实例变量的
+//（因为在运行期，对象的内存布局已经确定，如果添加实例变量就会破坏类的内部布局，这对编译型语言来说是灾难性的）。
 struct category_t {
-    const char *name;
-    classref_t cls;
-    struct method_list_t *instanceMethods;
-    struct method_list_t *classMethods;
-    struct protocol_list_t *protocols;
-    struct property_list_t *instanceProperties;
+    const char *name;                           //类的名字
+    classref_t cls;                             //类
+    struct method_list_t *instanceMethods;      //catogies 中所有给类添加的实例方法列表
+    struct method_list_t *classMethods;         //catogies 中所有给类添加的类方法列表
+    struct protocol_list_t *protocols;          //catogies 中所有给类添加的协议列表
+    struct property_list_t *instanceProperties; //catogies 中所有给类添加的属性
     // Fields below this point are not always present on disk.
-    struct property_list_t *_classProperties;
+    struct property_list_t *_classProperties;   //catogies 中所有给类添加的类属性
 
     method_list_t *methodsForMeta(bool isMeta) {
         if (isMeta) return classMethods;

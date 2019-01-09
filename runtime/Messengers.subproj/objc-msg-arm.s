@@ -740,7 +740,7 @@ LNilReceiver:
 *   method caches.
 *
 ********************************************************************/
-
+    //note add by xiaohai 调用__objc_forward_handler
 	MI_EXTERN(__objc_forward_handler)
 	MI_EXTERN(__objc_forward_stret_handler)
 	

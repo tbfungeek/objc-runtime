@@ -463,6 +463,8 @@ void *_objc_forward_stret_handler = nil;
 
 #else
 
+//Note add by xiaohai 消息转发的默认处理Handler
+//要设置转发只要重写_objc_forward_handler方法即可。在objc_setForwardHandler方法中，可以设置ForwardHandler。
 // Default forward handler halts the process.
 __attribute__((noreturn)) void 
 objc_defaultForwardHandler(id self, SEL sel)

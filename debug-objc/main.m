@@ -6,11 +6,20 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "RuntimeFunctionDemo.h"
+#import "RuntimeMetaCls.h"
+#import "ObjcMessage.h"
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
-        // insert code here...
-        NSObject *obj = [[NSObject alloc] init];
+        RuntimeFunctionDemo *runtimeFuction = [RuntimeFunctionDemo new];
+        [runtimeFuction runDemo];
+        
+        RuntimeMetaCls *runtimeMetaCls = [RuntimeMetaCls new];
+        [runtimeMetaCls runDemo];
+        
+        ObjcMessage *objcMessage = [ObjcMessage new];
+        [objcMessage runDemo];
     }
     return 0;
 }

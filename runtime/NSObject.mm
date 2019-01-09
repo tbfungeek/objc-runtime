@@ -2184,7 +2184,8 @@ void arr_init(void)
     _objc_fatal("-[NSObject methodSignatureForSelector:] "
                 "not available without CoreFoundation");
 }
-
+//接下来未识别的方法崩溃之前，系统会做一次完整的消息转发。
+//我们只需要重写下面这个方法，就可以自定义我们自己的转发逻辑了。
 + (void)forwardInvocation:(NSInvocation *)invocation {
     [self doesNotRecognizeSelector:(invocation ? [invocation selector] : 0)];
 }
@@ -2192,14 +2193,31 @@ void arr_init(void)
 - (void)forwardInvocation:(NSInvocation *)invocation {
     [self doesNotRecognizeSelector:(invocation ? [invocation selector] : 0)];
 }
+//实现此方法之后，若发现某调用不应由本类处理，则会调用超类的同名方法。如此，继承体系中的每个类都有机会处理该方法调用的请求，
+//一直到NSObject根类。如果到NSObject也不能处理该条消息，那么就是再无挽救措施了，只能抛出“doesNotRecognizeSelector”异常了。
+/*- (void)forwardInvocation:(NSInvocation *)anInvocation
+{
+    if ([someOtherObject respondsToSelector:
+         [anInvocation selector]])
+        [anInvocation invokeWithTarget:someOtherObject];
+    else
+        [super forwardInvocation:anInvocation];
+}*/
 
+//Note add by xiaohai
+//当然也可以替换类方法，那就要重写 + (id)forwardingTargetForSelector:(SEL)aSelector方法，返回值是一个类对象。
 + (id)forwardingTargetForSelector:(SEL)sel {
     return nil;
 }
-
+//开发者可以通过重写- (id)forwardingTargetForSelector:(SEL)aSelector方法来“偷梁换柱”，把消息的接受者换成一个可以处理该消息的对象。
 - (id)forwardingTargetForSelector:(SEL)sel {
     return nil;
 }
+
+//这一步是替消息找备援接收者，如果这一步返回的是nil，那么补救措施就完全的失效了，
+//Runtime系统会向对象发送methodSignatureForSelector:消息，并取到返回的方法签名用于生成NSInvocation对象。
+//为接下来的完整的消息转发生成一个 NSMethodSignature对象。NSMethodSignature 对象会被包装成 NSInvocation 对象，
+//forwardInvocation: 方法里就可以对 NSInvocation 进行处理了。
 
 
 // Replaced by CF (returns an NSString)

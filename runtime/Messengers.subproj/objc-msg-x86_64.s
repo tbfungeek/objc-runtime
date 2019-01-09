@@ -298,7 +298,7 @@ LExit$0:
 	addq	16(%r10), %r11		// r11 = class->cache.buckets + offset
 
 .if $0 != STRET
-        //当前的bucket->sel 不是 _cmd
+        //当前的bucket->sel 不等于 _cmd(当前方法的sel)
 	cmpq	cached_sel(%r11), %a2	// if (bucket->sel != _cmd)
 .else
 	cmpq	cached_sel(%r11), %a3	// if (bucket->sel != _cmd)
@@ -664,9 +664,9 @@ _objc_debug_taggedpointer_ext_classes:
     	//Note by xiaohai _objc_msgSend 入口
 	ENTRY _objc_msgSend
 	UNWIND _objc_msgSend, NoFrame
-	//判空
+	//判空 如果检测方法的接受者是nil，那么系统会自动clean并且return。
 	NilTest	NORMAL
-	//快速获取isa
+	//可以快速地获取到对象的 isa 指针地址放到 r11 寄存器
 	GetIsaFast NORMAL		// r10 = self->isa
         //在缓存中查找IMP 如果查找成功直接调用 IMP
 	CacheLookup NORMAL, CALL	// calls IMP on success

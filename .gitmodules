@@ -4,3 +4,6 @@
 [submodule "Aspects"]
 	path = Aspects
 	url = https://github.com/steipete/Aspects.git
+[submodule "JSPatch"]
+	path = JSPatch
+	url = https://github.com/bang590/JSPatch.git

@@ -171,6 +171,11 @@
 		83F550E0155E030800E95D3B /* objc-cache-old.mm in Sources */ = {isa = PBXBuildFile; fileRef = 83F550DF155E030800E95D3B /* objc-cache-old.mm */; };
 		87BB4EA70EC39854005D08E1 /* objc-probes.d in Sources */ = {isa = PBXBuildFile; fileRef = 87BB4E900EC39633005D08E1 /* objc-probes.d */; };
 		9672F7EE14D5F488007CEC96 /* NSObject.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9672F7ED14D5F488007CEC96 /* NSObject.mm */; };
+		E53AB64621D8713D002DD5C9 /* RuntimeFunctionDemo.m in Sources */ = {isa = PBXBuildFile; fileRef = E53AB64521D8713D002DD5C9 /* RuntimeFunctionDemo.m */; };
+		E53AB64921D871B1002DD5C9 /* RuntimeDemoBase.m in Sources */ = {isa = PBXBuildFile; fileRef = E53AB64821D871B1002DD5C9 /* RuntimeDemoBase.m */; };
+		E53AB64F21D877BE002DD5C9 /* RuntimeMetaCls.m in Sources */ = {isa = PBXBuildFile; fileRef = E53AB64E21D877BE002DD5C9 /* RuntimeMetaCls.m */; };
+		E56502B421E4D624001C6A84 /* ObjcMessage.m in Sources */ = {isa = PBXBuildFile; fileRef = E56502B321E4D624001C6A84 /* ObjcMessage.m */; };
+		E56502B721E4D650001C6A84 /* Person.m in Sources */ = {isa = PBXBuildFile; fileRef = E56502B621E4D650001C6A84 /* Person.m */; };
 		E8923DA5116AB2820071B552 /* objc-block-trampolines.mm in Sources */ = {isa = PBXBuildFile; fileRef = E8923DA0116AB2820071B552 /* objc-block-trampolines.mm */; };
 		F9BCC71B205C68E800DD9AFC /* objc-blocktramps-arm64.s in Sources */ = {isa = PBXBuildFile; fileRef = 8379996D13CBAF6F007C2B5F /* objc-blocktramps-arm64.s */; };
 /* End PBXBuildFile section */
@@ -370,6 +375,17 @@
 		9672F7ED14D5F488007CEC96 /* NSObject.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = NSObject.mm; path = runtime/NSObject.mm; sourceTree = "<group>"; };
 		BC8B5D1212D3D48100C78A5B /* libauto.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libauto.dylib; path = /usr/lib/libauto.dylib; sourceTree = "<absolute>"; };
 		D2AAC0630554660B00DB518D /* libobjc.A.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libobjc.A.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		E53AB64421D8713D002DD5C9 /* RuntimeFunctionDemo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RuntimeFunctionDemo.h; sourceTree = "<group>"; };
+		E53AB64521D8713D002DD5C9 /* RuntimeFunctionDemo.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RuntimeFunctionDemo.m; sourceTree = "<group>"; };
+		E53AB64721D871B1002DD5C9 /* RuntimeDemoBase.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RuntimeDemoBase.h; sourceTree = "<group>"; };
+		E53AB64821D871B1002DD5C9 /* RuntimeDemoBase.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RuntimeDemoBase.m; sourceTree = "<group>"; };
+		E53AB64B21D87214002DD5C9 /* RuntimeDemoBaseProtocol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RuntimeDemoBaseProtocol.h; sourceTree = "<group>"; };
+		E53AB64D21D877BE002DD5C9 /* RuntimeMetaCls.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RuntimeMetaCls.h; sourceTree = "<group>"; };
+		E53AB64E21D877BE002DD5C9 /* RuntimeMetaCls.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RuntimeMetaCls.m; sourceTree = "<group>"; };
+		E56502B221E4D624001C6A84 /* ObjcMessage.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ObjcMessage.h; sourceTree = "<group>"; };
+		E56502B321E4D624001C6A84 /* ObjcMessage.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ObjcMessage.m; sourceTree = "<group>"; };
+		E56502B521E4D650001C6A84 /* Person.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Person.h; sourceTree = "<group>"; };
+		E56502B621E4D650001C6A84 /* Person.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Person.m; sourceTree = "<group>"; };
 		E8923D9C116AB2820071B552 /* objc-blocktramps-i386.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = "objc-blocktramps-i386.s"; path = "runtime/objc-blocktramps-i386.s"; sourceTree = "<group>"; };
 		E8923D9D116AB2820071B552 /* objc-blocktramps-x86_64.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = "objc-blocktramps-x86_64.s"; path = "runtime/objc-blocktramps-x86_64.s"; sourceTree = "<group>"; };
 		E8923DA0116AB2820071B552 /* objc-block-trampolines.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = "objc-block-trampolines.mm"; path = "runtime/objc-block-trampolines.mm"; sourceTree = "<group>"; };
@@ -660,6 +676,10 @@
 		30466D8521B665A500DA7B9D /* debug-objc */ = {
 			isa = PBXGroup;
 			children = (
+				E56502B121E4D5F5001C6A84 /* ObjcMessage */,
+				E53AB64C21D8778D002DD5C9 /* MetaClass */,
+				E53AB64A21D871B9002DD5C9 /* Base */,
+				E53AB64321D870DF002DD5C9 /* RuntimeFunction */,
 				30466D8621B665A500DA7B9D /* main.m */,
 			);
 			path = "debug-objc";
@@ -753,6 +773,45 @@
 				39ABD71F12F0B61800D1054C /* objc-weak.h */,
 			);
 			name = "Project Headers";
+			sourceTree = "<group>";
+		};
+		E53AB64321D870DF002DD5C9 /* RuntimeFunction */ = {
+			isa = PBXGroup;
+			children = (
+				E53AB64421D8713D002DD5C9 /* RuntimeFunctionDemo.h */,
+				E53AB64521D8713D002DD5C9 /* RuntimeFunctionDemo.m */,
+			);
+			path = RuntimeFunction;
+			sourceTree = "<group>";
+		};
+		E53AB64A21D871B9002DD5C9 /* Base */ = {
+			isa = PBXGroup;
+			children = (
+				E53AB64721D871B1002DD5C9 /* RuntimeDemoBase.h */,
+				E53AB64821D871B1002DD5C9 /* RuntimeDemoBase.m */,
+				E53AB64B21D87214002DD5C9 /* RuntimeDemoBaseProtocol.h */,
+			);
+			path = Base;
+			sourceTree = "<group>";
+		};
+		E53AB64C21D8778D002DD5C9 /* MetaClass */ = {
+			isa = PBXGroup;
+			children = (
+				E53AB64D21D877BE002DD5C9 /* RuntimeMetaCls.h */,
+				E53AB64E21D877BE002DD5C9 /* RuntimeMetaCls.m */,
+			);
+			path = MetaClass;
+			sourceTree = "<group>";
+		};
+		E56502B121E4D5F5001C6A84 /* ObjcMessage */ = {
+			isa = PBXGroup;
+			children = (
+				E56502B221E4D624001C6A84 /* ObjcMessage.h */,
+				E56502B321E4D624001C6A84 /* ObjcMessage.m */,
+				E56502B521E4D650001C6A84 /* Person.h */,
+				E56502B621E4D650001C6A84 /* Person.m */,
+			);
+			path = ObjcMessage;
 			sourceTree = "<group>";
 		};
 		F9BCC72A205C6A1600DD9AFC /* Frameworks */ = {
@@ -1019,7 +1078,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E56502B721E4D650001C6A84 /* Person.m in Sources */,
+				E53AB64F21D877BE002DD5C9 /* RuntimeMetaCls.m in Sources */,
+				E53AB64921D871B1002DD5C9 /* RuntimeDemoBase.m in Sources */,
 				30466D8721B665A500DA7B9D /* main.m in Sources */,
+				E56502B421E4D624001C6A84 /* ObjcMessage.m in Sources */,
+				E53AB64621D8713D002DD5C9 /* RuntimeFunctionDemo.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1387,7 +1451,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEVELOPMENT_TEAM = 7S9BP5BHRS;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = NO;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -1443,7 +1507,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEVELOPMENT_TEAM = 7S9BP5BHRS;
 				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;

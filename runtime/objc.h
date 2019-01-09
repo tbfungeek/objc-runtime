@@ -37,7 +37,8 @@
 /// An opaque type that represents an Objective-C class.
 // Note add by xiaohai
 // 类结构体定义
-typedef struct objc_class *Class;
+// Class是指向objc_class结构体的指针
+typedef struct objc_class* Class;
 
 // Note add by xiaohai
 // 对象结构体定义
@@ -45,7 +46,8 @@ typedef struct objc_class *Class;
 //这个结构体只有一个isa变量，指向实例对象所属的类
 //对象最重要的特点是可以给其发送消息
 
-typedef struct objc_object *id;
+//id 是指向 objc_object结构体的指针
+typedef struct objc_object* id;
 
 /// Represents an instance of a class.
 struct objc_object {
@@ -55,10 +57,20 @@ struct objc_object {
 
 /// An opaque type that represents a method selector.
 // Note add by xiaohai SEL 定义 (有点像方法签名)
+// 注意：objc_selector是一个映射到方法的C字符串
 // 虽然 SEL 是 objc_selector 结构体指针，但实际上它只是一个C字符串。在类加载的时候，
 // 编译器会生成与方法相对应的选择子，并注册到 Objective-C 的 Runtime 运行系统。
 // SEL selA = @selector(setString:);
-// 不同类中相同名字的方法所对应的方法选择子是相同的，即使方法名字相同而变量类型不同也会导致它们具有相同的方法选择子。
+// 不同类中相同名字的方法所对应的方法选择子是相同的，即使方法名字相同而变量类型不同也会导致它们具有相同的方法选择子。由于这点特性，也导致了OC不支持函数重载。
+// 总结一下objc_msgSend会做一下几件事情：
+// 1.检测这个 selector是不是要忽略的。
+// 2.检查target是不是为nil。
+// 如果这里有相应的nil的处理函数，就跳转到相应的函数中。
+// 如果没有处理nil的函数，就自动清理现场并返回。这一点就是为何在OC中给nil发送消息不会崩溃的原因。
+// 3.确定不是给nil发消息之后，在该class的缓存中查找方法对应的IMP实现。
+// 如果找到，就跳转进去执行。
+// 如果没有找到，就在方法分发表里面继续查找，如果没找到就到父类中查找，一直找到NSObject为止。
+// 4.如果还没有找到，那就需要开始消息转发阶段了。至此，发送消息Messaging阶段完成。
 typedef struct objc_selector *SEL;
 
 /// A pointer to the function of a method implementation. 
