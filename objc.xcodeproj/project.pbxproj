@@ -386,6 +386,7 @@
 		E56502B321E4D624001C6A84 /* ObjcMessage.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ObjcMessage.m; sourceTree = "<group>"; };
 		E56502B521E4D650001C6A84 /* Person.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Person.h; sourceTree = "<group>"; };
 		E56502B621E4D650001C6A84 /* Person.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Person.m; sourceTree = "<group>"; };
+		E56502B921E59E71001C6A84 /* iOS 开发工具类.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "iOS 开发工具类.md"; sourceTree = "<group>"; };
 		E8923D9C116AB2820071B552 /* objc-blocktramps-i386.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = "objc-blocktramps-i386.s"; path = "runtime/objc-blocktramps-i386.s"; sourceTree = "<group>"; };
 		E8923D9D116AB2820071B552 /* objc-blocktramps-x86_64.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = "objc-blocktramps-x86_64.s"; path = "runtime/objc-blocktramps-x86_64.s"; sourceTree = "<group>"; };
 		E8923DA0116AB2820071B552 /* objc-block-trampolines.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = "objc-block-trampolines.mm"; path = "runtime/objc-block-trampolines.mm"; sourceTree = "<group>"; };
@@ -420,6 +421,7 @@
 		08FB7794FE84155DC02AAC07 /* objc */ = {
 			isa = PBXGroup;
 			children = (
+				E56502B821E59E34001C6A84 /* Docs */,
 				3014987921B658D100F165E9 /* include */,
 				BC8B5D1212D3D48100C78A5B /* libauto.dylib */,
 				838485C60D6D687700CEA253 /* Public Headers */,
@@ -812,6 +814,14 @@
 				E56502B621E4D650001C6A84 /* Person.m */,
 			);
 			path = ObjcMessage;
+			sourceTree = "<group>";
+		};
+		E56502B821E59E34001C6A84 /* Docs */ = {
+			isa = PBXGroup;
+			children = (
+				E56502B921E59E71001C6A84 /* iOS 开发工具类.md */,
+			);
+			path = Docs;
 			sourceTree = "<group>";
 		};
 		F9BCC72A205C6A1600DD9AFC /* Frameworks */ = {

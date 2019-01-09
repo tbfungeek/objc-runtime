@@ -7,3 +7,6 @@
 [submodule "JSPatch"]
 	path = JSPatch
 	url = https://github.com/bang590/JSPatch.git
+[submodule "dyld"]
+	path = dyld
+	url = https://github.com/opensource-apple/dyld.git
