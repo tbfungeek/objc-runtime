@@ -221,6 +221,8 @@ get_macho_vnode(
 	struct vnode		**vpp
 );
 
+//load_machfile会加载Mach-O中的各种load monmand命令。在其内部会禁止数据段执行，
+//防止溢出漏洞攻击，还会设置地址空间布局随机化（ASLR），还有一些映射的调整。
 load_return_t
 load_machfile(
 	struct image_params	*imgp,
@@ -263,6 +265,7 @@ load_machfile(
 
 	*result = load_result_null;
 
+	//解析mach文件
 	lret = parse_machfile(vp, map, thread, header, file_offset, macho_size,
 			      0, result);
 
@@ -347,6 +350,7 @@ parse_machfile(
 	boolean_t		abi64;
 	boolean_t		got_code_signatures = FALSE;
 
+	//类型校验
 	if (header->magic == MH_MAGIC_64 ||
 	    header->magic == MH_CIGAM_64) {
 	    	mach_header_sz = sizeof(struct mach_header_64);
@@ -354,16 +358,19 @@ parse_machfile(
 
 	/*
 	 *	Break infinite recursion
+	 *  打破因为层级较深导致的无限递归
 	 */
 	if (depth > 6) {
 		return(LOAD_FAILURE);
 	}
-
+	
 	task = (task_t)get_threadtask(thread);
 
+	//深度技术值递增
 	depth++;
 
 	/*
+	 *  检查是否是正确的计算机类型
 	 *	Check to see if right machine type.
 	 */
 	if (((cpu_type_t)(header->cputype & ~CPU_ARCH_MASK) != cpu_type()) ||
@@ -372,7 +379,10 @@ parse_machfile(
 		return(LOAD_BADARCH);
 		
 	abi64 = ((header->cputype & CPU_ARCH_ABI64) == CPU_ARCH_ABI64);
-		
+	
+	//主要是用来对Mach-O做检测，会检测Mach-O头部，解析其架构、检查imgp等内容，
+	//并拒绝接受Dylib和Bundle这样的文件，这些文件会由dyld负责加载
+	//文件类型
 	switch (header->filetype) {
 	
 	case MH_OBJECT:
@@ -420,6 +430,7 @@ parse_machfile(
 		return(LOAD_BADMACHO);
 
 	/*
+	 * 将加载命令映射到内核地址
 	 * Map the load commands into kernel memory.
 	 */
 	addr = 0;
@@ -439,6 +450,7 @@ parse_machfile(
 	/* (void)ubc_map(vp, PROT_EXEC); */ /* NOT HERE */
 	
 	/*
+	 * 扫描每个命令，处理每个命令
 	 *	Scan through the commands, processing each one as necessary.
 	 */
 	for (pass = 1; pass <= 2; pass++) {
@@ -449,9 +461,11 @@ parse_machfile(
 		 * the offset too far, so we are implicitly fail-safe.
 		 */
 		offset = mach_header_sz;
+		//加载命令数目
 		ncmds = header->ncmds;
 		while (ncmds--) {
 			/*
+			 *  获取指向命令的地址
 			 *	Get a pointer to the command.
 			 */
 			lcp = (struct load_command *)(addr + offset);
@@ -478,6 +492,7 @@ parse_machfile(
 			 * intervention is required.
 			 */
 			switch(lcp->cmd) {
+			/*加载64位segment*/
 			case LC_SEGMENT_64:
 				if (pass != 1)
 					break;
@@ -490,6 +505,7 @@ parse_machfile(
 						   map,
 						   result);
 				break;
+			/*加载32位segment*/
 			case LC_SEGMENT:
 				if (pass != 1)
 					break;
@@ -502,6 +518,7 @@ parse_machfile(
 						   map,
 						   result);
 				break;
+			/*加载线程数据*/
 			case LC_THREAD:
 				if (pass != 2)
 					break;
@@ -509,6 +526,7 @@ parse_machfile(
 						   thread,
 						  result);
 				break;
+			/*加载unix线程数据*/
 			case LC_UNIXTHREAD:
 				if (pass != 2)
 					break;
@@ -517,6 +535,7 @@ parse_machfile(
 						   thread,
 						 result);
 				break;
+			/*加载动态加载器*/
 			case LC_LOAD_DYLINKER:
 				if (pass != 2)
 					break;
@@ -527,6 +546,7 @@ parse_machfile(
 					ret = LOAD_FAILURE;
 				}
 				break;
+			/*加载代码签名加载器*/
 			case LC_CODE_SIGNATURE:
 				/* CODE SIGNING */
 				if (pass != 2)
@@ -572,7 +592,7 @@ parse_machfile(
 			    result->csflags |= blob->csb_flags;
 		    }
 	    }
-
+		//加载动态链接器
 	    if (dlp != 0)
 			ret = load_dylinker(dlp, dlarchbits, map, thread, depth, result, abi64);
 

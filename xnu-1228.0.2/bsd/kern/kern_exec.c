@@ -330,7 +330,7 @@ exec_save_path(struct image_params *imgp, user_addr_t path, int seg)
 #ifdef IMGPF_POWERPC
 /*
  * exec_powerpc32_imgact
- *
+ * PowerPC 镜像加载器
  * Implicitly invoke the PowerPC handler for a byte-swapped image magic
  * number.  This may happen either as a result of an attempt to invoke a
  * PowerPC image directly, or indirectly as the interpreter used in an
@@ -414,7 +414,7 @@ exec_powerpc32_imgact(struct image_params *imgp)
 
 /*
  * exec_shell_imgact
- *
+ * 翻译脚本镜像加载器
  * Image activator for interpreter scripts.  If the image begins with the
  * characters "#!", then it is an interpreter script.  Verify that we are
  * not already executing in PowerPC mode, and that the length of the script
@@ -562,7 +562,7 @@ exec_shell_imgact(struct image_params *imgp)
 
 /*
  * exec_fat_imgact
- *
+ * Fat 镜像激活器
  * Image activator for fat 1.0 binaries.  If the binary is fat, then we
  * need to select an image from it internally, and make that the image
  * we are going to attempt to execute.  At present, this consists of
@@ -685,7 +685,9 @@ bad:
 
 /*
  * exec_mach_imgact
- *
+ * 
+ * Mach-O 镜像激活器
+ * 
  * Image activator for mach-o 1.0 binaries.
  *
  * Parameters;	struct image_params *	image parameter block
@@ -724,9 +726,11 @@ exec_mach_imgact(struct image_params *imgp)
 	struct _posix_spawnattr *psa = NULL;
 
 	/*
+	 * 首先确保这是个Mach-O 1.0 或者Mach-O 2.0二进制文件
 	 * make sure it's a Mach-O 1.0 or Mach-O 2.0 binary; the difference
 	 * is a reserved field on the end, so for the most part, we can
 	 * treat them as if they were identical.
+	 * magic检查
 	 */
 	if ((mach_header->magic != MH_MAGIC) &&
 	    (mach_header->magic != MH_MAGIC_64)) {
@@ -734,6 +738,7 @@ exec_mach_imgact(struct image_params *imgp)
 		goto bad;
 	}
 
+	//为什么MH_DYLIB，MH_BUNDLE 要认定为error
 	switch (mach_header->filetype) {
 	case MH_DYLIB:
 	case MH_BUNDLE:
@@ -741,6 +746,7 @@ exec_mach_imgact(struct image_params *imgp)
 		goto bad;
 	}
 
+	//cpu 类型
 	if (!imgp->ip_origcputype) {
 		imgp->ip_origcputype = mach_header->cputype;
 		imgp->ip_origcpusubtype = mach_header->cpusubtype;
@@ -846,6 +852,7 @@ grade:
 	}
 
 	/*
+	 *  加载 Mach-O 文件 
 	 *	Load the Mach-O file.
 	 */
 
@@ -864,6 +871,7 @@ grade:
 		       ((imgp->ip_flags & IMGPF_IS_64BIT) == IMGPF_IS_64BIT));
 
 	/*
+	 * 实际加载我们之前想要加载的镜像
 	 * Actually load the image file we previously decided to load.
 	 */
 	lret = load_machfile(imgp, mach_header, thread, map, &load_result);
@@ -1142,6 +1150,7 @@ bad:
 
 
 /*
+ * 镜像激活表，这个是我们能够加载的镜像类型，我们按优先顺序列出它们以确保最快的镜像加载速度
  * Our image activator table; this is the table of the image types we are
  * capable of loading.  We list them in order of preference to ensure the
  * fastest image load speed.
@@ -1164,7 +1173,9 @@ struct execsw {
 
 /*
  * exec_activate_image
- *
+ * 遍历可用镜像激活器，并激活与imgp 结构相关的镜像
+ * 主要是拷贝可执行文件到内存中，并根据不同的可执行文件类型选择不同的加载函数，
+ * 所有的镜像的加载要么终止在一个错误上，要么最终完成加载镜像。
  * Description:	Iterate through the available image activators, and activate
  *		the image associated with the imgp structure.  We start with
  *		the
@@ -1248,6 +1259,9 @@ encapsulated_binary:
 		goto bad;
 	}
 	error = -1;
+	//根据不同的可执行文件类型选择不同的加载函数
+	//OS X有三种可执行文件，mach-o由exec_mach_imgact处理，fat binary由exec_fat_imgact处理，
+	//interpreter（解释器）由exec_shell_imgact处理
 	for(i = 0; error == -1 && execsw[i].ex_imgact != NULL; i++) {
 
 		error = (*execsw[i].ex_imgact)(imgp);
@@ -1841,17 +1855,17 @@ bad:
 	return(error);
 }
 
-
 /*
  * execve
+ * Note add by xiaohai
+ * 我们在用户态会通过exec*系列函数来加载一个可执行文件,而exec*系列函数都是对execve函数的封装
+ * Parameters:	uap->fname		File name to exec [待加载可执行文件名]
+ *			    uap->argp		Argument list	  [参数列表]
+ *			    uap->envp		Environment list  [环境参数列表]
  *
- * Parameters:	uap->fname		File name to exec
- *		uap->argp		Argument list
- *		uap->envp		Environment list
- *
- * Returns:	0			Success
+ * Returns:	0				Success
  *	__mac_execve:EINVAL		Invalid argument
- *	__mac_execve:ENOTSUP		Invalid argument
+ *	__mac_execve:ENOTSUP	Invalid argument
  *	__mac_execve:EACCES		Permission denied
  *	__mac_execve:EINTR		Interrupted function
  *	__mac_execve:ENOMEM		Not enough space
@@ -1870,18 +1884,19 @@ execve(proc_t p, struct execve_args *uap, register_t *retval)
 	struct __mac_execve_args muap;
 	int err;
 
-	muap.fname = uap->fname;
-	muap.argp = uap->argp;
-	muap.envp = uap->envp;
+	muap.fname = uap->fname;   //程序执行路径
+	muap.argp = uap->argp;     //参数列表
+	muap.envp = uap->envp;     //环境变量
 	muap.mac_p = USER_ADDR_NULL;
+	//这里只是调用了__mac_execve将执行文件名，参数列表，环境变量传入
 	err = __mac_execve(p, &muap, retval);
 
 	return(err);
 }
 
-/*
+/* 启动新进程和task，调用exec_activate_image
  * __mac_execve
- *
+ * Note add by xiaohai
  * Parameters:	uap->fname		File name to exec
  *		uap->argp		Argument list
  *		uap->envp		Environment list
@@ -1941,7 +1956,7 @@ __mac_execve(proc_t p, struct __mac_execve_args *uap, register_t *retval)
          * There may also be poor interaction with dyld.
          */
 
-	task = current_task();
+	task = current_task();   //获取当前的任务
 	uthread = get_bsdthread_info(current_thread());
 
 	/* If we're not in vfork, don't permit a mutithreaded task to exec */
@@ -1974,6 +1989,8 @@ __mac_execve(proc_t p, struct __mac_execve_args *uap, register_t *retval)
 #endif
 
 	proc_transstart(p, 0);
+	//Note add by xiaohai
+	//主要是为加载镜像进行数据的初始化，以及资源相关的操作
 	error = exec_activate_image(imgp);
 	proc_transend(p, 0);
 

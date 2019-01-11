@@ -2180,6 +2180,7 @@ void _objc_flush_caches(Class cls)
 
 /***********************************************************************
 * map_images
+* 处理dyld映射进来的指定的镜像
 * Process the given images which are being mapped in by dyld.
 * Calls ABI-agnostic code after taking ABI-specific locks.
 *
@@ -2570,7 +2571,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
         ts.log("IMAGE TIMES: first time tasks");
     }
 
-
+    // 查找classes
     // Discover classes. Fix up unresolved future classes. Mark bundle classes.
 
     for (EACH_HEADER) {
@@ -2731,6 +2732,15 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
 
     ts.log("IMAGE TIMES: realize future classes");
 
+    //1)、把category的实例方法、协议以及属性添加到类上
+    //2)、把category的类方法和协议添加到类的metaclass上
+    //需要注意的有两点：
+    //1)、category的方法没有“完全替换掉”原来类已经有的方法，也就是说如果category和原来类都有methodA，那么category附加完成之后，类的方法列表里会有两个methodA
+    //2)、category的方法被放到了新方法列表的前面，而原来类的方法被放到了新方法列表的后面，这也就是我们平常所说的category的方法会“覆盖”掉原来类的同名方法，这是因为运行时在查找方法的时候是顺着方法列表的顺序查找的，它只要一找到对应名字的方法，就会罢休^_^，殊不知后面可能还有一样名字的方法。
+    //1)、可以调用，因为附加category到类的工作会先于+load方法的执行
+    //2)、+load的执行顺序是先类，后category，而category的+load执行顺序是根据编译顺序决定的。
+    //怎么调用到原来类中被category覆盖掉的方法？
+    //对于这个问题，我们已经知道category其实并不是完全替换掉原来类的同名方法，只是category在方法列表的前面而已，所以我们只要顺着方法列表找到最后一个对应名字的方法，就可以调用原来类的方法：
     // Discover categories. 
     for (EACH_HEADER) {
         category_t **catlist = 
@@ -2761,6 +2771,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
             if (cat->instanceMethods ||  cat->protocols  
                 ||  cat->instanceProperties) 
             {
+                
                 addUnattachedCategoryForClass(cat, cls, hi);
                 if (cls->isRealized()) {
                     remethodizeClass(cls);
