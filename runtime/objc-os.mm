@@ -882,6 +882,16 @@ void _objc_atfork_child()
 //重载自己 Class 的 +load 方法时需不需要调父类？runtime 负责按继承顺序递归调用，所以我们不能调 super
 //动态链接依赖库，并由 runtime 负责加载成 objc 定义的结构，所有初始化工作结束后，dyld 调用真正的 main 函数。
 //当这一切都结束时，dyld 会清理现场，将调用栈回归，只剩下：main()
+
+
+//kernel准备环境,将应用程序装载到内存中
+//kernel装载dyld程序,并调用dyld进行应用初始化操作
+//load dylibs 根据Mach-O的Load Commands段加载所有依赖的动态库
+//rebase 将经过ASLR随机偏移过的访问首地址创建偏移指针并存储到__DATA段,方便后续访问使用
+//bind 将应用程序内调用外部的指令绑定起来
+//Objc 调用Objc的runtime环境并初始化,处理category和调用+load()方法
+//initializers 调用所有动态库的initializer方法,初始化动态库
+//call main() 调用app入口函数main
 /***********************************************************************
 * _objc_init
 * 引导初始化,用Dyld注册我们的镜像通知程序 这里是 objc 和 runtime 的初始化入口
@@ -902,6 +912,8 @@ void _objc_init(void)
     lock_init();
     exception_init();
 
+    //_dyld_objc_notify_register(&map_2_images, load_images, unmap_image);
+    //想法dyld注册了回调函数,当imagemap到内存中,当初始化完成image时和卸载image的时候都会回调注册者
     _dyld_objc_notify_register(&map_images, load_images, unmap_image);
 }
 

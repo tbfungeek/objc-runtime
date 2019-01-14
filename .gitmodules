@@ -10,3 +10,6 @@
 [submodule "dyld"]
 	path = dyld
 	url = https://github.com/opensource-apple/dyld.git
+[submodule "ReadyForBAT"]
+	path = ReadyForBAT
+	url = https://github.com/MisterBooo/ReadyForBAT.git

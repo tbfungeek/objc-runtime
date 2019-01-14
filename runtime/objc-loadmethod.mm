@@ -175,10 +175,11 @@ void remove_category_from_loadable_list(Category cat)
 
 
 /***********************************************************************
+
 * call_class_loads
 * Call all pending class +load methods.
 * If new classes become loadable, +load is NOT called for them.
-*
+* 其主要逻辑就是从待加载的类列表loadable_classes中寻找对应的类，然后找到@selector(load)的实现并执行。
 * Called only by call_load_methods().
 **********************************************************************/
 static void call_class_loads(void)

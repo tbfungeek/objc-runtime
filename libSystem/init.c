@@ -34,8 +34,9 @@
 
 struct ProgramVars; /* forward reference */
 
+// 系统库初始化器
 // system library initialisers
-extern void bootstrap_init(void);		// from liblaunch.dylib
+extern void bootstrap_init(void);		// from liblaunch.dylib   
 extern void mach_init(void);			// from libsystem_mach.dylib
 extern void pthread_init(void);			// from libc.a
 extern void __libc_init(const struct ProgramVars *vars, void (*atfork_prepare)(void), void (*atfork_parent)(void), void (*atfork_child)(void), const char *apple[]);	// from libc.a
@@ -76,6 +77,7 @@ void cthread_set_errno_self(int);
 /*
  * libsyscall_initializer() initializes all of libSystem.dylib <rdar://problem/4892197>
  */
+//在libSystem.dylib的init方法中初始化了多了dylib库,比如:liblaunch.dylib,libc.a,libdispatch.a等
 static __attribute__((constructor)) 
 void libSystem_initializer(int argc, const char* argv[], const char* envp[], const char* apple[], const struct ProgramVars* vars)
 {

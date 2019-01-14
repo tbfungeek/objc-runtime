@@ -535,7 +535,7 @@ parse_machfile(
 						   thread,
 						 result);
 				break;
-			/*加载动态加载器*/
+			/*加载动态加载器 程序需要的dyld的路径*/
 			case LC_LOAD_DYLINKER:
 				if (pass != 2)
 					break;

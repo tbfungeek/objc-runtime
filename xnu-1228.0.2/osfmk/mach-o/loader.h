@@ -151,7 +151,7 @@ struct load_command {
 #define LC_FVMFILE	0x9	/* fixed VM file inclusion (internal use) */
 #define LC_PREPAGE      0xa     /* prepage command (internal use) */
 #define	LC_DYSYMTAB	0xb	/* dynamic link-edit symbol table info */
-#define	LC_LOAD_DYLIB	0xc	/* load a dynamicly linked shared library */
+#define	LC_LOAD_DYLIB	0xc	/* load a dynamicly linked shared library LC_LOAD_DYLIB指向的都是程序依赖库加载信息*/
 #define	LC_ID_DYLIB	0xd	/* dynamicly linked shared lib identification */
 #define LC_LOAD_DYLINKER 0xe	/* load a dynamic linker */
 #define LC_ID_DYLINKER	0xf	/* dynamic linker identification */

@@ -2215,9 +2215,10 @@ load_images(const char *path __unused, const struct mach_header *mh)
     // Discover load methods
     {
         mutex_locker_t lock2(runtimeLock);
+        //prepare_load_methods方法中对load方法进行了前期准备
         prepare_load_methods((const headerType *)mh);
     }
-
+    //总结:load方法在libObjc.dyld库初始化的时候调用,在main函数之前调用
     // Call +load methods (without runtimeLock - re-entrant)
     call_load_methods();
 }
@@ -2563,6 +2564,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
         // 4/3 is NXMapTable's load factor
         int namedClassesSize = 
             (isPreoptimized() ? unoptimizedTotalClasses : totalClasses) * 4 / 3;
+        // 1. 初始化全局存储所有类的list
         gdb_objc_realized_classes =
             NXCreateMapTable(NXStrValueMapPrototype, namedClassesSize);
         
@@ -2575,6 +2577,8 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
     // Discover classes. Fix up unresolved future classes. Mark bundle classes.
 
     for (EACH_HEADER) {
+        // 2. 从Mach-O的__DATA区 __objc_classlist 获取所有类,并加入
+	    //    gdb_objc_realized_classes list中
         classref_t *classlist = _getObjc2ClassList(hi, &count);
         
         if (! mustReadClasses(hi)) {
@@ -2635,6 +2639,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
             UnfixedSelectors += count;
             for (i = 0; i < count; i++) {
                 const char *name = sel_cname(sels[i]);
+                //// 3. 注册Sel,并存储到全局变量namedSelectors的list中
                 sels[i] = sel_registerNameNoLock(name, isBundle);
             }
         }
@@ -2668,7 +2673,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
         NXMapTable *protocol_map = protocols();
         bool isPreoptimized = hi->isPreoptimized();
         bool isBundle = hi->isBundle();
-
+        //// 4. 找到所有Protocol并处理引用
         protocol_t **protolist = _getObjc2ProtocolList(hi, &count);
         for (i = 0; i < count; i++) {
             readProtocol(protolist[i], cls, protocol_map, 
@@ -2741,6 +2746,17 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
     //2)、+load的执行顺序是先类，后category，而category的+load执行顺序是根据编译顺序决定的。
     //怎么调用到原来类中被category覆盖掉的方法？
     //对于这个问题，我们已经知道category其实并不是完全替换掉原来类的同名方法，只是category在方法列表的前面而已，所以我们只要顺着方法列表找到最后一个对应名字的方法，就可以调用原来类的方法：
+    //在6.3中可以看到将category的方法,属性和Protocol信息添加到元类的方列表,属性列表和Protocol列表中了,但是添加顺序是如何的呢?
+    //例如元类是NSObject, category是NSObject+Cat
+    //元类中有方法列表: [A, B, C] 三个方法
+    //category类有方法列表: [A+, B+] 两个方法
+    //在6.1中找到的所有category,在这个时候是按照load顺序加载进来的,比如`cat3, cat2, cat1`
+    //到6.3的时候会按照加载顺序倒序或取出来所有category的方法,属性和Protocol列表,这里保证了最后加载的category会优先绑定到元类中
+    //在6.3中继续进行category绑定到元类中,使用了`memmov`和`memcpy`来保证元类的方法,属性和Protocol会整体放在category的相关信息之后,例如上面方法列表合并之后变成了:
+    //> [A+, B+, A, B, C]
+    //category的加载是在加载完image之后,load方法之前
+    //所有category的方法覆盖是按照加载顺序倒序的,最后加载的category的方法等优先执行
+    //所有category的方法都比元类方法先执行
     // Discover categories. 
     for (EACH_HEADER) {
         category_t **catlist = 
@@ -2889,9 +2905,12 @@ static void schedule_class_load(Class cls)
 
     if (cls->data()->flags & RW_LOADED) return;
 
+    //先加载父类
     // Ensure superclass-first ordering
+    //分析这段代码，可以知道，在将子类添加到加载列表之前，其父类一定会优先加载到列表中。
+    //这也是为何父类的+load方法在子类的+load方法之前调用的根本原因。
     schedule_class_load(cls->superclass);
-
+    //将类添加到可加载列表
     add_class_to_loadable_list(cls);
     cls->setInfo(RW_LOADED); 
 }
@@ -2905,18 +2924,23 @@ bool hasLoadMethods(const headerType *mhdr)
     return false;
 }
 
+//在prepare_load_methods方法中对load方法进行了前期准备:
+//遍历所有的load方法,确保父类先于子类的顺序加载到一个类的load方法list中
+//遍历所有的category类,将load方法添加一个类目的load方法list中
 void prepare_load_methods(const headerType *mhdr)
 {
     size_t count, i;
 
     runtimeLock.assertLocked();
 
+    //获取类
     classref_t *classlist = 
         _getObjc2NonlazyClassList(mhdr, &count);
     for (i = 0; i < count; i++) {
         schedule_class_load(remapClass(classlist[i]));
     }
 
+    //添加分类
     category_t **categorylist = _getObjc2NonlazyCategoryList(mhdr, &count);
     for (i = 0; i < count; i++) {
         category_t *cat = categorylist[i];
