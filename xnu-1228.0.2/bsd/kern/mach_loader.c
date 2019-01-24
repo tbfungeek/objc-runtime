@@ -582,6 +582,7 @@ parse_machfile(
 		if (ret != LOAD_SUCCESS)
 			break;
 	}
+	//加载成功
 	if (ret == LOAD_SUCCESS) { 
 	    if (! got_code_signatures) {
 		    struct cs_blob *blob;
@@ -592,8 +593,9 @@ parse_machfile(
 			    result->csflags |= blob->csb_flags;
 		    }
 	    }
-		//加载动态链接器
+		//加载动态链接器  dlp  为从上面获取到的动态dyliner的路径
 	    if (dlp != 0)
+			//加载dylinker
 			ret = load_dylinker(dlp, dlarchbits, map, thread, depth, result, abi64);
 
 	    if(depth == 1) {
@@ -1178,7 +1180,6 @@ load_threadentry(
 	return(LOAD_SUCCESS);
 }
 
-
 static
 load_return_t
 load_dylinker(
@@ -1221,11 +1222,12 @@ load_dylinker(
 	myresult = load_result_null;
 
 	/*
+	 * 首先直接映射dyld 
 	 *	First try to map dyld in directly.  This should work most of
 	 *	the time since there shouldn't normally be something already
 	 *	mapped to its address.
 	 */
-
+	//解析dyld
 	ret = parse_machfile(vp, map, thread, &header, file_offset, macho_size,
 				depth, &myresult);
 
@@ -1309,7 +1311,7 @@ load_dylinker(
 
 		vm_map_deallocate(copy_map);
 	}
-	
+	//如果加载成功设置会返回entry_point
 	if (ret == LOAD_SUCCESS) {		
 		result->dynlinker = TRUE;
 		result->entry_point = myresult.entry_point;

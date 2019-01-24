@@ -521,6 +521,7 @@ static void checkIsKnownClass(Class cls)
 
 /***********************************************************************
 * addUnattachedCategoryForClass
+* 记录未附加的分类。
 * Records an unattached category.
 * Locking: runtimeLock must be held by the caller.
 **********************************************************************/
@@ -775,10 +776,13 @@ attachCategories(Class cls, category_list *cats, bool flush_caches)
     bool isMeta = cls->isMetaClass();
 
     // fixme rearrange to remove these intermediate allocations
+    // 方法列表
     method_list_t **mlists = (method_list_t **)
         malloc(cats->count * sizeof(*mlists));
+    // 属性列表
     property_list_t **proplists = (property_list_t **)
         malloc(cats->count * sizeof(*proplists));
+    // 协议列表
     protocol_list_t **protolists = (protocol_list_t **)
         malloc(cats->count * sizeof(*protolists));
 
@@ -808,7 +812,10 @@ attachCategories(Class cls, category_list *cats, bool flush_caches)
         if (protolist) {
             protolists[protocount++] = protolist;
         }
-    }
+    }   
+    //    --> rw->methods    -->  mlists    
+    //cls --> rw->properties -->  proplists
+    //    --> rw->protocols  -->  protolists   
 
     //将catories中的方法属性以及协议添加到rw中
     auto rw = cls->data();
@@ -2204,6 +2211,7 @@ map_images(unsigned count, const char * const paths[],
 extern bool hasLoadMethods(const headerType *mhdr);
 extern void prepare_load_methods(const headerType *mhdr);
 
+//到这里为止已经将所有类加到内存中，并将每个分类的方法，协议，属性添加到对应类
 void
 load_images(const char *path __unused, const struct mach_header *mh)
 {
@@ -2573,11 +2581,10 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
         ts.log("IMAGE TIMES: first time tasks");
     }
 
-    // 查找classes
+    // =================================查找classes=================================
     // Discover classes. Fix up unresolved future classes. Mark bundle classes.
-
     for (EACH_HEADER) {
-        // 2. 从Mach-O的__DATA区 __objc_classlist 获取所有类,并加入
+        // 2. 从Mach-O的 __DATA区 __objc_classlist 获取所有类,并加入
 	    //    gdb_objc_realized_classes list中
         classref_t *classlist = _getObjc2ClassList(hi, &count);
         
@@ -2594,12 +2601,11 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
             Class newCls = readClass(cls, headerIsBundle, headerIsPreoptimized);
 
             if (newCls != cls  &&  newCls) {
+                //类被移动了但是没有被删除的情况
                 // Class was moved but not deleted. Currently this occurs 
                 // only when the new class resolved a future class.
                 // Non-lazily realize the class below.
-                resolvedFutureClasses = (Class *)
-                    realloc(resolvedFutureClasses, 
-                            (resolvedFutureClassCount+1) * sizeof(Class));
+                resolvedFutureClasses = (Class *)realloc(resolvedFutureClasses, (resolvedFutureClassCount+1) * sizeof(Class));
                 resolvedFutureClasses[resolvedFutureClassCount++] = newCls;
             }
         }
@@ -2607,6 +2613,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
 
     ts.log("IMAGE TIMES: discover classes");
 
+    // 修复重新映射的类
     // Fix up remapped classes
     // Class list and nonlazy class list remain unremapped.
     // Class refs and super refs are remapped for message dispatching.
@@ -2625,6 +2632,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
         }
     }
 
+    // 重新映射类
     ts.log("IMAGE TIMES: remap classes");
 
     // Fix up @selector references
@@ -2639,7 +2647,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
             UnfixedSelectors += count;
             for (i = 0; i < count; i++) {
                 const char *name = sel_cname(sels[i]);
-                //// 3. 注册Sel,并存储到全局变量namedSelectors的list中
+                // 3. 注册Sel,并存储到全局变量namedSelectors的list中
                 sels[i] = sel_registerNameNoLock(name, isBundle);
             }
         }
@@ -2739,13 +2747,20 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
 
     //1)、把category的实例方法、协议以及属性添加到类上
     //2)、把category的类方法和协议添加到类的metaclass上
+
     //需要注意的有两点：
     //1)、category的方法没有“完全替换掉”原来类已经有的方法，也就是说如果category和原来类都有methodA，那么category附加完成之后，类的方法列表里会有两个methodA
-    //2)、category的方法被放到了新方法列表的前面，而原来类的方法被放到了新方法列表的后面，这也就是我们平常所说的category的方法会“覆盖”掉原来类的同名方法，这是因为运行时在查找方法的时候是顺着方法列表的顺序查找的，它只要一找到对应名字的方法，就会罢休^_^，殊不知后面可能还有一样名字的方法。
+    //2)、category的方法被放到了新方法列表的前面，而原来类的方法被放到了新方法列表的后面，这也就是我们平常所说的category的方法会“覆盖”掉原来类的同名方法，
+    //    这是因为运行时在查找方法的时候是顺着方法列表的顺序查找的，它只要一找到对应名字的方法，就会罢休^_^，殊不知后面可能还有一样名字的方法。
+
     //1)、可以调用，因为附加category到类的工作会先于+load方法的执行
     //2)、+load的执行顺序是先类，后category，而category的+load执行顺序是根据编译顺序决定的。
+
+
     //怎么调用到原来类中被category覆盖掉的方法？
-    //对于这个问题，我们已经知道category其实并不是完全替换掉原来类的同名方法，只是category在方法列表的前面而已，所以我们只要顺着方法列表找到最后一个对应名字的方法，就可以调用原来类的方法：
+    //对于这个问题，我们已经知道category其实并不是完全替换掉原来类的同名方法，只是category在方法列表的前面而已，
+    //所以我们只要顺着方法列表找到最后一个对应名字的方法，就可以调用原来类的方法：
+    
     //在6.3中可以看到将category的方法,属性和Protocol信息添加到元类的方列表,属性列表和Protocol列表中了,但是添加顺序是如何的呢?
     //例如元类是NSObject, category是NSObject+Cat
     //元类中有方法列表: [A, B, C] 三个方法
@@ -2754,17 +2769,21 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
     //到6.3的时候会按照加载顺序倒序或取出来所有category的方法,属性和Protocol列表,这里保证了最后加载的category会优先绑定到元类中
     //在6.3中继续进行category绑定到元类中,使用了`memmov`和`memcpy`来保证元类的方法,属性和Protocol会整体放在category的相关信息之后,例如上面方法列表合并之后变成了:
     //> [A+, B+, A, B, C]
+
     //category的加载是在加载完image之后,load方法之前
     //所有category的方法覆盖是按照加载顺序倒序的,最后加载的category的方法等优先执行
     //所有category的方法都比元类方法先执行
+
     // Discover categories. 
     for (EACH_HEADER) {
         category_t **catlist = 
             _getObjc2CategoryList(hi, &count);
+        //查看是否包含属性
         bool hasClassProperties = hi->info()->hasCategoryClassProperties();
 
         for (i = 0; i < count; i++) {
             category_t *cat = catlist[i];
+            //获取到所属的类
             Class cls = remapClass(cat->cls);
 
             if (!cls) {
@@ -2784,12 +2803,14 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
             // Then, rebuild the class's method lists (etc) if 
             // the class is realized. 
             bool classExists = NO;
+            //如果有实例方法，协议或者实例属性
             if (cat->instanceMethods ||  cat->protocols  
                 ||  cat->instanceProperties) 
             {
                 
                 addUnattachedCategoryForClass(cat, cls, hi);
                 if (cls->isRealized()) {
+                    //将分类添到属性，方法，协议添加到对应的类中
                     remethodizeClass(cls);
                     classExists = YES;
                 }
@@ -2799,7 +2820,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
                                  classExists ? "on existing class" : "");
                 }
             }
-
+            //如果有类方法，协议或者类属性
             if (cat->classMethods  ||  cat->protocols  
                 ||  (hasClassProperties && cat->_classProperties)) 
             {

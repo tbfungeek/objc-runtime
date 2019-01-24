@@ -187,7 +187,7 @@ static void call_class_loads(void)
     int i;
     
     // Detach current loadable list.
-    struct loadable_class *classes = loadable_classes;
+    struct loadable_class *classes = loadable_classes;/*这是preppare阶段构造的*/
     int used = loadable_classes_used;
     loadable_classes = nil;
     loadable_classes_allocated = 0;
@@ -196,12 +196,14 @@ static void call_class_loads(void)
     // Call all +loads for the detached list.
     for (i = 0; i < used; i++) {
         Class cls = classes[i].cls;
+
         load_method_t load_method = (load_method_t)classes[i].method;
         if (!cls) continue; 
 
         if (PrintLoading) {
             _objc_inform("LOAD: +[%s load]\n", cls->nameForLogging());
         }
+        //调用+load方法
         (*load_method)(cls, SEL_load);
     }
     
@@ -228,7 +230,7 @@ static bool call_category_loads(void)
     bool new_categories_added = NO;
     
     // Detach current loadable list.
-    struct loadable_category *cats = loadable_categories;
+    struct loadable_category *cats = loadable_categories;/*数据来源 在prepare阶段构建*/
     int used = loadable_categories_used;
     int allocated = loadable_categories_allocated;
     loadable_categories = nil;
@@ -306,7 +308,9 @@ static bool call_category_loads(void)
 
 /***********************************************************************
 * call_load_methods
+* 调用所有挂起的类和类别+load方法。
 * Call all pending class and category +load methods.
+* Class +load方法 先调用父类的 --> 本类的 --> 分类的
 * Class +load methods are called superclass-first. 
 * Category +load methods are not called until after the parent class's +load.
 * 
@@ -351,10 +355,12 @@ void call_load_methods(void)
     do {
         // 1. Repeatedly call class +loads until there aren't any more
         while (loadable_classes_used > 0) {
+            //调用类的load方法
             call_class_loads();
         }
 
         // 2. Call category +loads ONCE
+        //调用分类的load方法
         more_categories = call_category_loads();
 
         // 3. Run more +loads if there are classes OR more untried categories

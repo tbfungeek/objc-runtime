@@ -732,12 +732,13 @@ exec_mach_imgact(struct image_params *imgp)
 	 * treat them as if they were identical.
 	 * magic检查
 	 */
-	if ((mach_header->magic != MH_MAGIC) &&
-	    (mach_header->magic != MH_MAGIC_64)) {
+	if ((mach_header->magic != MH_MAGIC/*32位架构*/) &&
+	    (mach_header->magic != MH_MAGIC_64/*64位架构*/)) {
 		error = -1;
 		goto bad;
 	}
 
+	// 如果文件类型为MH_DYLIB 或者MH_BUNDLE 返回错误
 	//为什么MH_DYLIB，MH_BUNDLE 要认定为error
 	switch (mach_header->filetype) {
 	case MH_DYLIB:
@@ -746,7 +747,7 @@ exec_mach_imgact(struct image_params *imgp)
 		goto bad;
 	}
 
-	//cpu 类型
+	//cpu 类型检查
 	if (!imgp->ip_origcputype) {
 		imgp->ip_origcputype = mach_header->cputype;
 		imgp->ip_origcpusubtype = mach_header->cpusubtype;
@@ -1264,6 +1265,7 @@ encapsulated_binary:
 	//interpreter（解释器）由exec_shell_imgact处理
 	for(i = 0; error == -1 && execsw[i].ex_imgact != NULL; i++) {
 
+		//遍历镜像激活函数，寻找可以激活当前镜像的激活器
 		error = (*execsw[i].ex_imgact)(imgp);
 
 		switch (error) {
@@ -1894,7 +1896,8 @@ execve(proc_t p, struct execve_args *uap, register_t *retval)
 	return(err);
 }
 
-/* 启动新进程和task，调用exec_activate_image
+/* 
+ * 启动新进程和task，调用exec_activate_image
  * __mac_execve
  * Note add by xiaohai
  * Parameters:	uap->fname		File name to exec
@@ -1938,8 +1941,7 @@ __mac_execve(proc_t p, struct __mac_execve_args *uap, register_t *retval)
 	context.vc_ucred = kauth_cred_proc_ref(p);	/* XXX must NOT be kauth_cred_get() */
 
 	imgp = &image_params;
-
-	/* Initialize the common data in the image_params structure */
+	/*初始化image_params 结构体的公共参数，主要是传进来的可执行文件路径，参数列表，环境参数*/
 	bzero(imgp, sizeof(*imgp));
 	imgp->ip_user_fname = uap->fname;
 	imgp->ip_user_argv = uap->argp;
@@ -1990,7 +1992,7 @@ __mac_execve(proc_t p, struct __mac_execve_args *uap, register_t *retval)
 
 	proc_transstart(p, 0);
 	//Note add by xiaohai
-	//主要是为加载镜像进行数据的初始化，以及资源相关的操作
+	//激活镜像:主要是为加载镜像进行数据的初始化，以及资源相关的操作
 	error = exec_activate_image(imgp);
 	proc_transend(p, 0);
 

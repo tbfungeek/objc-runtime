@@ -1951,6 +1951,8 @@ struct objc_method_description_list {
     struct objc_method_description list[1];
 };
 
+
+//Catogires
 struct objc_category {
     char * _Nonnull category_name                            OBJC2_UNAVAILABLE;
     char * _Nonnull class_name                               OBJC2_UNAVAILABLE;
