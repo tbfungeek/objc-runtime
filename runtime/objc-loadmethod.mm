@@ -181,6 +181,13 @@ void remove_category_from_loadable_list(Category cat)
 * If new classes become loadable, +load is NOT called for them.
 * 其主要逻辑就是从待加载的类列表loadable_classes中寻找对应的类，然后找到@selector(load)的实现并执行。
 * Called only by call_load_methods().
+
+load 可以说我们在日常开发中可以接触到的调用时间最靠前的方法，在主函数运行之前，load 方法就会调用。
+由于它的调用不是惰性的，且其只会在程序调用期间调用一次，最最重要的是，如果在类与分类中都实现了 load 方法，它们都会被调用，
+不像其它的在分类中实现的方法会被覆盖，这就使 load 方法成为了方法调剂的绝佳时机。但是由于 load 方法的运行时间过早，
+所以这里可能不是一个理想的环境，因为某些类可能需要在在其它类之前加载，但是这是我们无法保证的。
+不过在这个时间点，所有的 framework 都已经加载到了运行时中，所以调用 framework 中的方法都是安全的。
+
 **********************************************************************/
 static void call_class_loads(void)
 {

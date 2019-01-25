@@ -311,6 +311,7 @@ _objc_debug_taggedpointer_ext_classes:
 	ldr	p13, [x0]		// p13 = isa
 	GetClassFromIsa_p16 p13		// p16 = class
 LGetIsaDone:
+    #CacheLookup
 	CacheLookup NORMAL		// calls imp or objc_msgSend_uncached
 
 #if SUPPORT_TAGGED_POINTERS

@@ -95,8 +95,11 @@ objc_msgSendSuper(void /* struct objc_super *super, SEL op, ... */ )
  * 检查这个selector是否需要忽略（什么情况下需要忽略？）
  * 检查消息的接收者是否为空，如果是空并且有相应的nil处理函数，就跳转到相应的处理函数
  * 如果没有处理nil的函数，就自动清理现场并返回。
+ * 无锁的缓存查找
+ * 如果类没有实现（isRealized）或者初始化（isInitialized），实现或者初始化类
  * 如果消息接收者不是空的情况下会先在class的方法缓存中查找，如果没有找到就到class的方法列表中查找，如果没有找到就继续顺着继承链继续查找
  * 如果没有找到还有一个机会就是通过指定resolver，如果resolver还是没有找到，那就到事件的转发机制
+ * 解锁、返回实现
  * @note When it encounters a method call, the compiler generates a call to one of the
  *  functions \c objc_msgSend, \c objc_msgSend_stret, \c objc_msgSendSuper, or \c objc_msgSendSuper_stret.
  *  Messages sent to an object’s superclass (using the \c super keyword) are sent using \c objc_msgSendSuper; 

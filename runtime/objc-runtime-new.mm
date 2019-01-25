@@ -812,10 +812,7 @@ attachCategories(Class cls, category_list *cats, bool flush_caches)
         if (protolist) {
             protolists[protocount++] = protolist;
         }
-    }   
-    //    --> rw->methods    -->  mlists    
-    //cls --> rw->properties -->  proplists
-    //    --> rw->protocols  -->  protolists   
+    }
 
     //将catories中的方法属性以及协议添加到rw中
     auto rw = cls->data();
@@ -4954,6 +4951,7 @@ IMP _class_lookupMethodAndLoadCache3(id obj, SEL sel, Class cls)
 *    如果你不想前向查找使用lookUpImpOrNil
 *   If you don't want forwarding at all, use lookUpImpOrNil() instead.
 **********************************************************************/
+//从objc_msgSend -> MethodTableLookUp 过来的 initialize == TRUE  cache == FALSE  resolver = TRUE
 IMP lookUpImpOrForward(Class cls, SEL sel, id inst, 
                        bool initialize, bool cache, bool resolver)
 {
