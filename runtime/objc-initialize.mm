@@ -481,6 +481,20 @@ void performForkChildInitialize(Class cls, Class supercls)
 * class_initialize.  Send the '+initialize' message on demand to any
 * uninitialized class. Force initialization of superclasses first.
 **********************************************************************/
+//方法的主要作用自然是向未初始化的类发送 +initialize 消息，不过会强制父类先发送 +initialize。
+//强制未初始化过的父类调用 initialize 方法
+//通过加锁来设置 RW_INITIALIZING 标志位
+//成功设置标志位、向当前类发送 +initialize 消息
+//完成初始化，如果父类已经初始化完成，设置 RW_INITIALIZED 标志位。否则，在父类初始化完成之后再设置标志位
+//如果当前线程正在初始化当前类，直接返回，否则，会等待其它线程初始化结束后，再返回，保证线程安全
+//初始化成功后，直接返回
+
+//initialize 的调用是惰性的，它会在第一次调用当前类的方法时被调用
+//与 load 不同，initialize 方法调用时，所有的类都已经加载到了内存中
+//initialize 的运行是线程安全的
+//子类会继承父类的 initialize 方法
+//而其作用也非常局限，一般我们只会在 initialize 方法中进行一些常量的初始化。
+
 void _class_initialize(Class cls)
 {
     assert(!cls->isMetaClass());
@@ -489,6 +503,7 @@ void _class_initialize(Class cls)
     bool reallyInitialize = NO;
 
     // 确保父类在初始化类之前已经初始化过了
+    //// 1. 强制父类先调用 initialize 方法
     // Make sure super is done initializing BEFORE beginning to initialize cls.
     // See note about deadlock above.
     supercls = cls->superclass;
@@ -498,6 +513,7 @@ void _class_initialize(Class cls)
     
     // Try to atomically set CLS_INITIALIZING.
     {
+        //// 2. 通过加锁来设置 RW_INITIALIZING 标志位
         monitor_locker_t lock(classInitLock);
         if (!cls->isInitialized() && !cls->isInitializing()) {
             cls->setInitializing();
@@ -509,6 +525,7 @@ void _class_initialize(Class cls)
         // We successfully set the CLS_INITIALIZING bit. Initialize the class.
         
         // Record that we're initializing this class so we can message it.
+        //// 3. 成功设置标志位，向当前类发送 +initialize 消息
         _setThisThreadIsInitializingClass(cls);
 
         if (MultithreadedForkChild) {

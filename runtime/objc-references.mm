@@ -219,6 +219,14 @@ enum {
     OBJC_ASSOCIATION_GETTER_AUTORELEASE = (2 << 8)
 }; 
 
+/*
+获取静态变量 AssociationsHashMap
+以 DISGUISE(object) 为 key 查找 AssociationsHashMap
+以 void *key 为 key 查找 ObjcAssociation
+根据 policy 调用相应的方法
+返回关联对象 ObjcAssociation 的值
+*/
+
 id _object_get_associative_reference(id object, void *key) {
     id value = nil;
     uintptr_t policy = OBJC_ASSOCIATION_ASSIGN;
@@ -268,15 +276,32 @@ struct ReleaseValue {
     }
 };
 
+/*
+
+关联对象又是如何实现并且管理的呢：
+关联对象其实就是 ObjcAssociation 对象
+关联对象由 AssociationsManager 管理并在 AssociationsHashMap 存储
+对象的指针以及其对应 ObjectAssociationMap 以键值对的形式存储在 AssociationsHashMap 中
+ObjectAssociationMap 则是用于存储关联对象的数据结构
+每一个对象都有一个标记位 has_assoc 指示对象是否含有关联对象
+
+*/
 void _object_set_associative_reference(id object, void *key, id value, uintptr_t policy) {
     // retain the new value (if any) outside the lock.
+    //使用 old_association(0, nil) 创建一个临时的 ObjcAssociation 对象
+    //（用于持有原有的关联对象，方便在方法调用的最后释放值）
     ObjcAssociation old_association(0, nil);
+    //调用 acquireValue 对 new_value 进行 retain 或者 copy
+    //new_value == nil，就说明我们要删除对应 key 的关联对象
     id new_value = value ? acquireValue(value, policy) : nil;
     {
         AssociationsManager manager;
+        //初始化一个 AssociationsManager，并获取唯一的保存关联对象的哈希表 AssociationsHashMap
         AssociationsHashMap &associations(manager.associations());
+        //先使用 DISGUISE(object) 作为 key 寻找对应的 ObjectAssociationMap
         disguised_ptr_t disguised_object = DISGUISE(object);
         if (new_value) {
+            //如果找到了对应的 ObjectAssociationMap，就要看 key 是否存在了，由此来决定是更新原有的关联对象，还是增加一个
             // break any existing association.
             AssociationsHashMap::iterator i = associations.find(disguised_object);
             if (i != associations.end()) {
@@ -290,13 +315,17 @@ void _object_set_associative_reference(id object, void *key, id value, uintptr_t
                     (*refs)[key] = ObjcAssociation(policy, new_value);
                 }
             } else {
+                //如果没有找到，初始化一个 ObjectAssociationMap，再实例化 ObjcAssociation 对象添加到 Map 中
+                //，并调用 setHasAssociatedObjects 方法，表明当前对象含有关联对象
                 // create the new association (first time).
                 ObjectAssociationMap *refs = new ObjectAssociationMap;
                 associations[disguised_object] = refs;
                 (*refs)[key] = ObjcAssociation(policy, new_value);
+                //它会将 isa 结构体中的标记位 has_assoc 标记为 true，也就是表示当前对象有关联对象
                 object->setHasAssociatedObjects();
             }
         } else {
+            //这种情况下方法的实现与前面的唯一区别就是，我们会调用 erase 方法，擦除 ObjectAssociationMap 中 key 对应的节点。
             // setting the association to nil breaks the association.
             AssociationsHashMap::iterator i = associations.find(disguised_object);
             if (i !=  associations.end()) {
