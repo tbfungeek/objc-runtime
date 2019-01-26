@@ -1,0 +1,265 @@
+{
+	"_type": "Project",
+	"_id": "AAAAAAFF+h6SjaM2Hec=",
+	"name": "Untitled",
+	"ownedElements": [
+		{
+			"_type": "UMLModel",
+			"_id": "AAAAAAFF+qBWK6M3Z8Y=",
+			"_parent": {
+				"$ref": "AAAAAAFF+h6SjaM2Hec="
+			},
+			"name": "Model",
+			"ownedElements": [
+				{
+					"_type": "UMLClassDiagram",
+					"_id": "AAAAAAFF+qBtyKM79qY=",
+					"_parent": {
+						"$ref": "AAAAAAFF+qBWK6M3Z8Y="
+					},
+					"name": "Main",
+					"defaultDiagram": true,
+					"ownedViews": [
+						{
+							"_type": "RoundRectView",
+							"_id": "AAAAAAFoiepNe35tczw=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 112,
+							"top": 149,
+							"width": 561,
+							"height": 265
+						},
+						{
+							"_type": "RectangleView",
+							"_id": "AAAAAAFoiepNe35u9CM=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 154,
+							"top": 184,
+							"width": 145,
+							"height": 50
+						},
+						{
+							"_type": "UMLTextView",
+							"_id": "AAAAAAFoiepNe35vPYo=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 200,
+							"top": 196,
+							"width": 63,
+							"height": 25,
+							"text": "多继承"
+						},
+						{
+							"_type": "RectangleView",
+							"_id": "AAAAAAFoiepNe35w+VY=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 330,
+							"top": 184,
+							"width": 145,
+							"height": 50
+						},
+						{
+							"_type": "UMLTextView",
+							"_id": "AAAAAAFoiepNe35xjps=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 344,
+							"top": 196,
+							"width": 121,
+							"height": 38,
+							"text": "Method Swizzling"
+						},
+						{
+							"_type": "RectangleView",
+							"_id": "AAAAAAFoiepNe35ymWU=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 496,
+							"top": 184,
+							"width": 145,
+							"height": 50
+						},
+						{
+							"_type": "UMLTextView",
+							"_id": "AAAAAAFoiepNe35zCSY=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 552,
+							"top": 197,
+							"width": 57,
+							"height": 38,
+							"text": "AOP"
+						},
+						{
+							"_type": "RectangleView",
+							"_id": "AAAAAAFoiepNe350tUU=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 152,
+							"top": 255,
+							"width": 145,
+							"height": 50
+						},
+						{
+							"_type": "UMLTextView",
+							"_id": "AAAAAAFoiepNe3515Ag=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 168,
+							"top": 268,
+							"width": 137,
+							"height": 38,
+							"text": "Accociated Object"
+						},
+						{
+							"_type": "RectangleView",
+							"_id": "AAAAAAFoiepNe352VM0=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 330,
+							"top": 256,
+							"width": 145,
+							"height": 50
+						},
+						{
+							"_type": "UMLTextView",
+							"_id": "AAAAAAFoiepNe353sFA=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 360,
+							"top": 268,
+							"width": 105,
+							"height": 38,
+							"text": "isa  Swizzling"
+						},
+						{
+							"_type": "RectangleView",
+							"_id": "AAAAAAFoiepNe354dO0=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 498,
+							"top": 256,
+							"width": 145,
+							"height": 50
+						},
+						{
+							"_type": "UMLTextView",
+							"_id": "AAAAAAFoiepNe355t58=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 528,
+							"top": 268,
+							"width": 105,
+							"height": 38,
+							"text": "动态方法添加"
+						},
+						{
+							"_type": "RectangleView",
+							"_id": "AAAAAAFoiepNe356liw=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 150,
+							"top": 329,
+							"width": 147,
+							"height": 50
+						},
+						{
+							"_type": "UMLTextView",
+							"_id": "AAAAAAFoiepNe357cXM=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 168,
+							"top": 341,
+							"width": 105,
+							"height": 25,
+							"text": "自动归档和解档"
+						},
+						{
+							"_type": "RectangleView",
+							"_id": "AAAAAAFoiepNe358Uow=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 333,
+							"top": 331,
+							"width": 140,
+							"height": 50
+						},
+						{
+							"_type": "UMLTextView",
+							"_id": "AAAAAAFoiepNe3596vA=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 352,
+							"top": 341,
+							"width": 105,
+							"height": 25,
+							"text": "Json <--> model"
+						},
+						{
+							"_type": "RectangleView",
+							"_id": "AAAAAAFoiepNe35+3WI=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 496,
+							"top": 329,
+							"width": 145,
+							"height": 50
+						},
+						{
+							"_type": "UMLTextView",
+							"_id": "AAAAAAFoiepNe35/H1Y=",
+							"_parent": {
+								"$ref": "AAAAAAFF+qBtyKM79qY="
+							},
+							"font": "Arial;13;0",
+							"left": 544,
+							"top": 341,
+							"width": 57,
+							"height": 25,
+							"text": "\bKVO"
+						}
+					]
+				}
+			]
+		}
+	]
+}

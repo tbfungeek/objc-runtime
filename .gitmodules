@@ -13,3 +13,6 @@
 [submodule "ReadyForBAT"]
 	path = ReadyForBAT
 	url = https://github.com/MisterBooo/ReadyForBAT.git
+[submodule "LearningIOS"]
+	path = LearningIOS
+	url = https://github.com/zhouhuanqiang/LearningIOS.git
